@@ -1,0 +1,24 @@
+Package: omopDeliveryReport
+Type: Package
+Title: OMOP CDM Delivery Report Generator
+Version: 1.0.0
+Authors@R: person("Edward", "Frankenberger", email = "edward.frankenberger@nih.gov",
+                  role = c("aut", "cre"))
+Description: Generates interactive HTML reports for OMOP Common Data Model (CDM)
+    data deliveries using output from the Connect for Cancer Prevention OMOP pipeline
+    and the DataQualityDashboard R package from OHDSI.
+Encoding: UTF-8
+Depends:
+    R (>= 4.0.0)
+Imports:
+    dplyr (>= 1.0.0),
+    tidyr (>= 1.0.0),
+    stringr (>= 1.4.0),
+    jsonlite,
+    networkD3,
+    rmarkdown,
+    RColorBrewer,
+    googleCloudStorageR,
+    logger,
+    plumber
+RoxygenNote: 7.3.3

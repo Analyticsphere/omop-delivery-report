@@ -1,0 +1,7 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.DS_Store$
+^delivery_report\.csv$
+^dqd_results\.csv$
+^\.git$
+^\.gitignore$

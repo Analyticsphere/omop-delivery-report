@@ -1,0 +1,53 @@
+**/.DS_STORE
+delivery_report_files/
+**claude**
+
+# R History and Session Data
+.Rhistory
+.RData
+.Rapp.history
+
+# RStudio files
+.Rproj.user/
+*.Rproj
+
+# Temporary files
+*~
+*.swp
+*.swo
+.DS_Store
+
+# R package build artifacts
+*.tar.gz
+*.zip
+
+# Generated reports (keep source data, ignore generated HTML)
+*.html
+
+# R Environment Variables
+.Renviron
+
+# OAuth2 token
+.httr-oauth
+
+# knitr and R markdown default cache directories
+*_cache/
+/cache/
+
+# Temporary files created by R markdown
+*.utf8.md
+*.knit.md
+
+# R package vignettes
+inst/doc/
+vignettes/*.html
+vignettes/*.pdf
+
+# pkgdown site
+docs/
+
+# Translation temp files
+po/*~
+
+# RStudio Connect folder
+rsconnect/
