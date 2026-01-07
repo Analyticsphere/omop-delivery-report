@@ -14,5 +14,5 @@ Tibble with additional column: type_group
 }
 \description{
 Categorizes OMOP type concepts into broader groups (EHR, Claims, Disease registry,
-Patient reported, Other) based on naming patterns.
+Patient reported, Unlabeled, Other) based on naming patterns.
 }
