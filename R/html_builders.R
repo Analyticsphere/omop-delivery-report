@@ -423,6 +423,13 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
     '<p><strong>Data Quality Score:</strong> <span class="text-muted">Not available</span></p>'
   }
 
+  # Dynamic Type Concept Breakdown heading based on group name
+  type_concept_heading <- if (group_name == "All Tables") {
+    "Type Concept Breakdown (All Tables)"
+  } else {
+    sprintf("Type Concept Breakdown (%s Tables)", group_name)
+  }
+
   sprintf('
     <div class="table-group-content" id="group-%s" style="%s">
         <h3>%s</h3>
@@ -450,7 +457,7 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
         </div>
 
         <div class="subsection">
-            <h4>Type Concept Breakdown (Group Summary)</h4>
+            <h4>%s</h4>
             <div id="group-type-concepts-%s" class="chart-container">
                 <!-- Dynamically populated by JavaScript -->
             </div>
@@ -463,6 +470,7 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
     group_id, group_id, group_id, group_id, group_id, group_id, # onclick handlers (6 sortable columns - Status is not sortable)
     group_id, # tbody ID
     table_rows,
+    type_concept_heading, # dynamic heading for Type Concept Breakdown
     group_id # type concepts div ID
   )
 }
