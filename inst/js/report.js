@@ -1020,14 +1020,34 @@ function buildTypeConceptChartSimple(typeConceptsData) {
     grouped[group].concepts.push(tc);
   });
 
-  // Convert to array and sort by count
+  // Define canonical order
+  var typeGroupOrder = REPORT_DATA.type_group_order || [
+    "EHR", "Claims", "Disease registry", "Patient reported", "Other", "Unlabeled"
+  ];
+
+  // Ensure all groups from canonical order are present (with 0 counts if missing)
+  typeGroupOrder.forEach(function(groupName) {
+    if (!grouped[groupName]) {
+      grouped[groupName] = { group: groupName, count: 0, concepts: [] };
+    }
+  });
+
+  // Convert to array and sort by canonical order (not by count)
   var groupArray = [];
   for (var key in grouped) {
     if (grouped.hasOwnProperty(key)) {
       groupArray.push(grouped[key]);
     }
   }
-  var sortedGroups = groupArray.sort(function(a, b) { return b.count - a.count; });
+
+  // Sort by canonical order
+  var sortedGroups = groupArray.sort(function(a, b) {
+    var indexA = typeGroupOrder.indexOf(a.group);
+    var indexB = typeGroupOrder.indexOf(b.group);
+    if (indexA === -1) indexA = 999; // Put unknown groups at end
+    if (indexB === -1) indexB = 999;
+    return indexA - indexB;
+  });
 
   // Calculate total for percentages
   var total = 0;
@@ -1037,7 +1057,7 @@ function buildTypeConceptChartSimple(typeConceptsData) {
 
   html += '<div style="display: flex; gap: 48px; margin: 20px 0; align-items: flex-start; justify-content: center;">';
 
-  html += '<div style="flex-shrink: 0;">';
+  html += '<div style="flex-shrink: 0; padding-top: 40px;">';
   html += buildPieChart(sortedGroups, total);
   html += '</div>';
 
@@ -1078,14 +1098,34 @@ function buildTypeConceptChart(typeConceptsData) {
     grouped[group].concepts.push(tc);
   });
 
-  // Convert to array and sort by count
+  // Define canonical order
+  var typeGroupOrder = REPORT_DATA.type_group_order || [
+    "EHR", "Claims", "Disease registry", "Patient reported", "Other", "Unlabeled"
+  ];
+
+  // Ensure all groups from canonical order are present (with 0 counts if missing)
+  typeGroupOrder.forEach(function(groupName) {
+    if (!grouped[groupName]) {
+      grouped[groupName] = { group: groupName, count: 0, concepts: [] };
+    }
+  });
+
+  // Convert to array and sort by canonical order (not by count)
   var groupArray = [];
   for (var key in grouped) {
     if (grouped.hasOwnProperty(key)) {
       groupArray.push(grouped[key]);
     }
   }
-  var sortedGroups = groupArray.sort(function(a, b) { return b.count - a.count; });
+
+  // Sort by canonical order
+  var sortedGroups = groupArray.sort(function(a, b) {
+    var indexA = typeGroupOrder.indexOf(a.group);
+    var indexB = typeGroupOrder.indexOf(b.group);
+    if (indexA === -1) indexA = 999; // Put unknown groups at end
+    if (indexB === -1) indexB = 999;
+    return indexA - indexB;
+  });
 
   // Calculate total for percentages
   var total = 0;
@@ -1095,7 +1135,7 @@ function buildTypeConceptChart(typeConceptsData) {
 
   html += '<div style="display: flex; gap: 48px; margin: 20px 0; align-items: flex-start;">';
 
-  html += '<div style="flex-shrink: 0;">';
+  html += '<div style="flex-shrink: 0; display: flex; align-items: center; padding-top: 40px;">';
   html += buildPieChart(sortedGroups, total);
   html += '</div>';
 
@@ -1118,7 +1158,8 @@ function buildTypeConceptChart(typeConceptsData) {
   html += '<div style="flex: 1; border-left: 1px solid #e5e7eb; padding-left: 48px; min-width: 300px;">';
   html += '<h5 style="margin: 0 0 16px 0; font-size: 0.85em; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Detailed Breakdown</h5>';
   sortedGroups.forEach(function(group) {
-    if (group.concepts.length > 0) {
+    // Only show groups with non-zero counts in detailed breakdown
+    if (group.count > 0 && group.concepts.length > 0) {
       html += '<div style="margin-bottom: 20px;">';
       html += '  <div style="font-weight: 600; color: #0f172a; margin-bottom: 8px; font-size: 0.9em;">' + group.group + '</div>';
       html += '  <div style="margin-left: 16px; font-size: 0.85em; color: #475569;">';

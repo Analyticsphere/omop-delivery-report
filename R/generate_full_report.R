@@ -267,11 +267,24 @@ prepare_report_data_json <- function(metrics, dqd_data, table_groups, group_dqd_
       dplyr::filter(source_table %in% group_tables | target_table %in% group_tables)
 
     # Group-level type concepts (summed across tables in group)
-    group_type_concepts <- metrics$type_concepts_grouped %>%
+    group_type_concepts_detailed <- metrics$type_concepts_grouped %>%
       dplyr::filter(table_name %in% group_tables) %>%
       dplyr::group_by(type_group, type_concept) %>%
+      dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop")
+
+    # Aggregate by type_group only and ensure all groups present
+    group_type_concepts_summary <- group_type_concepts_detailed %>%
+      dplyr::group_by(type_group) %>%
       dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
-      dplyr::arrange(type_group, desc(count))
+      ensure_all_type_groups()
+
+    # Order detailed concepts by canonical group order, then count
+    # Note: Don't call ensure_all_type_groups() here because this is detailed data
+    # with type_concept column. JavaScript will aggregate and ensure all groups.
+    group_type_concepts <- group_type_concepts_detailed %>%
+      dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) %>%
+      dplyr::arrange(type_group, desc(count)) %>%
+      dplyr::mutate(type_group = as.character(type_group))
 
     group_data[[group_name]] <- list(
       tables = table_data_list,
@@ -292,15 +305,29 @@ prepare_report_data_json <- function(metrics, dqd_data, table_groups, group_dqd_
     dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
     dplyr::arrange(desc(count))
 
-  # Add overall type concepts (dataset-wide, not grouped)
-  overall_type_concepts <- metrics$type_concepts_grouped %>%
+  # Add overall type concepts (dataset-wide)
+  overall_type_concepts_detailed <- metrics$type_concepts_grouped %>%
     dplyr::group_by(type_group, type_concept) %>%
+    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop")
+
+  # Aggregate by type_group only and ensure all groups present
+  overall_type_concepts_summary <- overall_type_concepts_detailed %>%
+    dplyr::group_by(type_group) %>%
     dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
-    dplyr::arrange(type_group, desc(count))
+    ensure_all_type_groups()
+
+  # Order detailed concepts by canonical group order, then count
+  # Note: Don't call ensure_all_type_groups() here because this is detailed data
+  # with type_concept column. JavaScript will aggregate and ensure all groups.
+  overall_type_concepts <- overall_type_concepts_detailed %>%
+    dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) %>%
+    dplyr::arrange(type_group, desc(count)) %>%
+    dplyr::mutate(type_group = as.character(type_group))
 
   data_list <- list(
     groups = group_data,
     type_colors = as.list(get_type_concept_colors()),
+    type_group_order = get_type_concept_group_order(),
     overall_transitions = overall_transitions,
     harmonization_statuses = overall_harmonization_statuses,
     overall_type_concepts = overall_type_concepts
@@ -346,7 +373,10 @@ prepare_table_data <- function(table_name, metrics, dqd_score) {
   final_rows <- ifelse(length(final_rows) > 0, final_rows[1], 0)
 
   type_concepts <- metrics$type_concepts_grouped %>%
-    dplyr::filter(table_name == !!table_name)
+    dplyr::filter(table_name == !!table_name) %>%
+    dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) %>%
+    dplyr::arrange(type_group, desc(count)) %>%
+    dplyr::mutate(type_group = as.character(type_group))
 
   invalid_columns <- metrics$invalid_columns %>%
     dplyr::filter(table_name == !!table_name) %>%
