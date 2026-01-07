@@ -153,6 +153,9 @@ function showTableDrilldown(tableName) {
   const content = buildTableDrilldownContent(tableData);
   document.getElementById("drilldown-content").innerHTML = content;
 
+  // Initialize table drilldown timeline
+  initializeTableDrilldownTimeSeries(tableName);
+
   // Scroll to top of page
   window.scrollTo(0, 0);
 
@@ -501,6 +504,33 @@ function buildTableDrilldownContent(tableData) {
       </div>
     `;
   }
+
+  // Data Timeline Section
+  html += `
+    <div class="subsection">
+      <h4 style="margin-bottom: 4px;">Data Timeline</h4>
+      <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; text-align: center;">${tableData.name}</div>
+
+      <div style="margin-top: 16px;">
+        <div class="toggle-buttons" style="margin-bottom: 16px;">
+          <button class="toggle-button active" id="drilldown-time-series-recent" onclick="switchTableDrilldownTimeSeriesView('recent')">Last 15 Years</button>
+          <button class="toggle-button" id="drilldown-time-series-custom" onclick="switchTableDrilldownTimeSeriesView('custom')">Custom</button>
+        </div>
+
+        <div id="drilldown-time-series-custom-controls" style="display: none; margin-bottom: 16px; gap: 12px; align-items: center;">
+          <label style="font-weight: 500; color: #475569;">From:</label>
+          <input type="number" id="drilldown-time-series-start-year" min="1900" max="2100" placeholder="YYYY" style="width: 100px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+          <label style="font-weight: 500; color: #475569;">To:</label>
+          <input type="number" id="drilldown-time-series-end-year" min="1900" max="2100" placeholder="YYYY" style="width: 100px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+          <button onclick="applyTableDrilldownCustomYearRange()" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">Apply</button>
+        </div>
+
+        <div id="table-drilldown-time-series-chart-container" style="margin-top: 16px; min-height: 400px;">
+          <!-- Chart will be populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+  `;
 
   // Vocabulary Harmonization Flow Section
   var rowsIn = 0;
@@ -1448,6 +1478,12 @@ let allUniqueTables = []; // Store ALL unique tables once at initialization
 let customStartYear = 1970;
 let customEndYear = 2025;
 
+// Global state for table drilldown timeline
+let currentTableDrilldownView = "recent";
+let currentDrilldownTable = null;
+let drilldownCustomStartYear = 1970;
+let drilldownCustomEndYear = 2025;
+
 // Table colors (must match harmonization Sankey colors)
 const TIME_SERIES_COLORS = {
   "condition_occurrence": "#ef4444",  // Red
@@ -1754,6 +1790,203 @@ function updateTimeSeriesLegend(allTables) {
   });
 
   legendContainer.innerHTML = html;
+}
+
+// ============================================================================
+// TABLE DRILLDOWN TIMELINE
+// ============================================================================
+
+function initializeTableDrilldownTimeSeries(tableName) {
+  console.log("Initializing table drilldown timeline for:", tableName);
+  currentDrilldownTable = tableName;
+
+  // Set default view to recent
+  currentTableDrilldownView = "recent";
+
+  // Set default custom year range from config
+  if (timeSeriesConfig.historicalStartYear && timeSeriesConfig.deliveryYear) {
+    drilldownCustomStartYear = timeSeriesConfig.historicalStartYear;
+    drilldownCustomEndYear = timeSeriesConfig.deliveryYear;
+  }
+
+  // Draw the chart
+  drawTableDrilldownTimeSeries();
+}
+
+function switchTableDrilldownTimeSeriesView(view) {
+  console.log("Switching table drilldown view to:", view);
+  currentTableDrilldownView = view;
+
+  // Update button states
+  const recentBtn = document.getElementById("drilldown-time-series-recent");
+  const customBtn = document.getElementById("drilldown-time-series-custom");
+  const customControls = document.getElementById("drilldown-time-series-custom-controls");
+
+  if (recentBtn && customBtn && customControls) {
+    if (view === "recent") {
+      recentBtn.classList.add("active");
+      customBtn.classList.remove("active");
+      customControls.style.display = "none";
+    } else if (view === "custom") {
+      recentBtn.classList.remove("active");
+      customBtn.classList.add("active");
+      customControls.style.display = "flex";
+
+      // Populate inputs with current values
+      document.getElementById("drilldown-time-series-start-year").value = drilldownCustomStartYear;
+      document.getElementById("drilldown-time-series-end-year").value = drilldownCustomEndYear;
+    }
+  }
+
+  drawTableDrilldownTimeSeries();
+}
+
+function applyTableDrilldownCustomYearRange() {
+  const startInput = document.getElementById("drilldown-time-series-start-year");
+  const endInput = document.getElementById("drilldown-time-series-end-year");
+
+  const startYear = parseInt(startInput.value);
+  const endYear = parseInt(endInput.value);
+
+  if (isNaN(startYear) || isNaN(endYear)) {
+    alert("Please enter valid years");
+    return;
+  }
+
+  if (startYear >= endYear) {
+    alert("Start year must be before end year");
+    return;
+  }
+
+  drilldownCustomStartYear = startYear;
+  drilldownCustomEndYear = endYear;
+
+  drawTableDrilldownTimeSeries();
+}
+
+function drawTableDrilldownTimeSeries() {
+  console.log("Drawing table drilldown timeline for:", currentDrilldownTable);
+
+  const container = document.getElementById("table-drilldown-time-series-chart-container");
+  if (!container) {
+    console.log("Container not found");
+    return;
+  }
+
+  if (!currentDrilldownTable || timeSeriesData.length === 0) {
+    container.innerHTML = "<p>No time series data available</p>";
+    return;
+  }
+
+  // Determine year range based on view
+  let startYear, endYear;
+  if (currentTableDrilldownView === "recent") {
+    startYear = timeSeriesConfig.recentStartYear;
+    endYear = timeSeriesConfig.recentEndYear;
+  } else if (currentTableDrilldownView === "custom") {
+    startYear = drilldownCustomStartYear;
+    endYear = drilldownCustomEndYear;
+  } else {
+    startYear = timeSeriesConfig.historicalStartYear;
+    endYear = timeSeriesConfig.historicalEndYear;
+  }
+
+  // Filter data for this table and year range
+  const tableData = timeSeriesData.filter(function(row) {
+    return row.table_name === currentDrilldownTable &&
+           row.year >= startYear &&
+           row.year <= endYear;
+  });
+
+  if (tableData.length === 0) {
+    container.innerHTML = "<p>No data available for the selected time range</p>";
+    return;
+  }
+
+  // Sort by year
+  tableData.sort(function(a, b) { return a.year - b.year; });
+
+  // Calculate dimensions
+  const containerWidth = container.clientWidth;
+  const containerHeight = 450;
+  const margin = { top: 20, right: 40, bottom: 60, left: 80 };
+  const chartWidth = containerWidth - margin.left - margin.right;
+  const chartHeight = containerHeight - margin.top - margin.bottom;
+
+  // Calculate scales
+  const maxCount = Math.max.apply(null, tableData.map(function(d) { return d.count; }));
+  const minCount = 0;
+
+  // Create x-scale (year)
+  const xScale = function(year) {
+    return margin.left + (year - startYear) / (endYear - startYear) * chartWidth;
+  };
+
+  // Create y-scale (count)
+  const yScale = function(count) {
+    return margin.top + chartHeight - ((count - minCount) / (maxCount - minCount)) * chartHeight;
+  };
+
+  // Get color for this table
+  const color = TIME_SERIES_COLORS[currentDrilldownTable] || "#3b82f6";
+
+  // Build SVG
+  let html = '<svg width="' + containerWidth + '" height="' + containerHeight + '" style="background: white; border-radius: 8px;">';
+
+  // Draw grid lines and Y-axis labels
+  const numYTicks = 5;
+  for (let i = 0; i <= numYTicks; i++) {
+    const count = minCount + (maxCount - minCount) * (i / numYTicks);
+    const y = yScale(count);
+
+    // Grid line
+    html += '<line x1="' + margin.left + '" y1="' + y + '" x2="' + (margin.left + chartWidth) + '" y2="' + y + '" stroke="#e5e7eb" stroke-width="1" />';
+
+    // Y-axis label
+    html += '<text x="' + (margin.left - 10) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="#64748b">' + formatNumber(Math.round(count)) + '</text>';
+  }
+
+  // Draw X-axis (years)
+  const yearRange = endYear - startYear;
+  const yearStep = yearRange <= 15 ? 1 : Math.ceil(yearRange / 15);
+
+  for (let year = startYear; year <= endYear; year += yearStep) {
+    const x = xScale(year);
+    const y = margin.top + chartHeight;
+
+    // Tick mark
+    html += '<line x1="' + x + '" y1="' + y + '" x2="' + x + '" y2="' + (y + 6) + '" stroke="#94a3b8" stroke-width="1" />';
+
+    // Year label
+    html += '<text x="' + x + '" y="' + (y + 20) + '" text-anchor="middle" font-size="11" fill="#64748b">' + year + '</text>';
+  }
+
+  // Draw line
+  let pathData = "M";
+  tableData.forEach(function(d, i) {
+    const x = xScale(d.year);
+    const y = yScale(d.count);
+    if (i === 0) {
+      pathData += x + "," + y;
+    } else {
+      pathData += " L" + x + "," + y;
+    }
+  });
+
+  html += '<path d="' + pathData + '" fill="none" stroke="' + color + '" stroke-width="3" />';
+
+  // Draw points
+  tableData.forEach(function(d) {
+    const x = xScale(d.year);
+    const y = yScale(d.count);
+    html += '<circle cx="' + x + '" cy="' + y + '" r="5" fill="' + color + '" stroke="white" stroke-width="2" style="cursor: pointer;">';
+    html += '<title>' + currentDrilldownTable + ' (' + d.year + '): ' + formatNumber(d.count) + '</title>';
+    html += '</circle>';
+  });
+
+  html += '</svg>';
+
+  container.innerHTML = html;
 }
 
 // ============================================================================
