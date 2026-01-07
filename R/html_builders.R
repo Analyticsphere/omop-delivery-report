@@ -36,8 +36,8 @@ build_sidebar <- function(metrics, dqd_score, has_delivery_data = TRUE, has_dqd_
         <nav class="sidebar-nav">
             <a href="#overview" class="sidebar-nav-item" onclick="scrollToSection(event, \'overview\')">Overview</a>
             <a href="#dqd-grid" class="sidebar-nav-item" onclick="scrollToSection(event, \'dqd-grid\')">DQD Results</a>
-            <a href="#delivery-report" class="sidebar-nav-item" onclick="scrollToSection(event, \'delivery-report\')">Tables</a>
             <a href="#time-series" class="sidebar-nav-item" onclick="scrollToSection(event, \'time-series\')">Data Timeline</a>
+            <a href="#delivery-report" class="sidebar-nav-item" onclick="scrollToSection(event, \'delivery-report\')">Tables</a>
             <a href="#vocab-harmonization" class="sidebar-nav-item" onclick="scrollToSection(event, \'vocab-harmonization\')">Vocabularies</a>
             <a href="#technical-summary" class="sidebar-nav-item" onclick="scrollToSection(event, \'technical-summary\')">Technical</a>
         </nav>
@@ -522,9 +522,28 @@ build_time_series_section <- function(metrics, has_delivery_data = TRUE) {
                 <button id="btn-recent-view" class="toggle-button active" onclick="switchTimeSeriesView(\'recent\')">
                     Last 15 Years (%d\u2013%d)
                 </button>
-                <button id="btn-historical-view" class="toggle-button" onclick="switchTimeSeriesView(\'historical\')">
-                    Historical (1970\u2013%d)
+                <button id="btn-custom-view" class="toggle-button" onclick="switchTimeSeriesView(\'custom\')">
+                    Custom
                 </button>
+            </div>
+
+            <div id="custom-year-controls" style="display: none; margin-top: 16px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label for="custom-start-year" style="font-weight: 500; color: #475569; font-size: 0.9em;">From:</label>
+                        <input type="number" id="custom-start-year" value="%d" min="1900" max="2100"
+                               style="width: 80px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9em;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label for="custom-end-year" style="font-weight: 500; color: #475569; font-size: 0.9em;">To:</label>
+                        <input type="number" id="custom-end-year" value="%d" min="1900" max="2100"
+                               style="width: 80px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9em;">
+                    </div>
+                    <button id="btn-apply-custom-years" onclick="applyCustomYearRange()"
+                            style="padding: 6px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; font-size: 0.9em; transition: background 0.2s;">
+                        Apply
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -550,7 +569,7 @@ build_time_series_section <- function(metrics, has_delivery_data = TRUE) {
         </script>
     </div>',
     recent_start_year, recent_end_year,
-    historical_end_year,
+    historical_start_year, delivery_year,
     time_series_json,
     recent_start_year, recent_end_year,
     historical_start_year, historical_end_year,

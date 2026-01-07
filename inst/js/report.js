@@ -1442,6 +1442,10 @@ window.addEventListener("load", function() {
 let currentTimeSeriesView = "recent";
 let timeSeriesData = [];
 let timeSeriesConfig = {};
+let visibleTables = new Set(); // Track which tables are visible
+let allUniqueTables = []; // Store ALL unique tables once at initialization
+let customStartYear = 1970;
+let customEndYear = 2025;
 
 // Table colors (must match harmonization Sankey colors)
 const TIME_SERIES_COLORS = {
@@ -1462,7 +1466,76 @@ function switchTimeSeriesView(view) {
 
   // Update button states
   document.getElementById("btn-recent-view").classList.toggle("active", view === "recent");
-  document.getElementById("btn-historical-view").classList.toggle("active", view === "historical");
+  document.getElementById("btn-custom-view").classList.toggle("active", view === "custom");
+
+  // Show/hide custom year controls
+  const customControls = document.getElementById("custom-year-controls");
+  if (customControls) {
+    customControls.style.display = view === "custom" ? "block" : "none";
+  }
+
+  // Redraw chart
+  drawTimeSeriesChart();
+}
+
+function toggleTableVisibility(tableName) {
+  console.log("Toggling visibility for:", tableName);
+
+  // Don't allow hiding all tables
+  if (visibleTables.size === 1 && visibleTables.has(tableName)) {
+    console.log("Cannot hide the last visible table");
+    return;
+  }
+
+  // Toggle visibility
+  if (visibleTables.has(tableName)) {
+    visibleTables.delete(tableName);
+  } else {
+    visibleTables.add(tableName);
+  }
+
+  console.log("Visible tables:", Array.from(visibleTables));
+
+  // Redraw chart (this will also update the legend)
+  drawTimeSeriesChart();
+}
+
+function applyCustomYearRange() {
+  console.log("Applying custom year range");
+
+  // Get input values
+  const startInput = document.getElementById("custom-start-year");
+  const endInput = document.getElementById("custom-end-year");
+
+  if (!startInput || !endInput) {
+    console.error("Custom year inputs not found");
+    return;
+  }
+
+  const startYear = parseInt(startInput.value);
+  const endYear = parseInt(endInput.value);
+
+  // Validate
+  if (isNaN(startYear) || isNaN(endYear)) {
+    alert("Please enter valid years");
+    return;
+  }
+
+  if (startYear >= endYear) {
+    alert("Start year must be less than end year");
+    return;
+  }
+
+  if (startYear < 1900 || endYear > 2100) {
+    alert("Please enter years between 1900 and 2100");
+    return;
+  }
+
+  // Update state
+  customStartYear = startYear;
+  customEndYear = endYear;
+
+  console.log("Custom range set to:", startYear, "-", endYear);
 
   // Redraw chart
   drawTimeSeriesChart();
@@ -1486,6 +1559,18 @@ function initializeTimeSeries() {
     console.log("Loaded data timeline data:", timeSeriesData.length, "rows");
     console.log("Config:", timeSeriesConfig);
 
+    // Initialize custom year range from config
+    customStartYear = timeSeriesConfig.historicalStartYear || 1970;
+    customEndYear = timeSeriesConfig.deliveryYear || 2025;
+
+    // Store ALL unique tables from the dataset (THIS IS THE MASTER LIST!)
+    allUniqueTables = [...new Set(timeSeriesData.map(d => d.table_name))].sort();
+    console.log("All unique tables:", allUniqueTables);
+
+    // Initialize visible tables (all tables visible by default)
+    visibleTables = new Set(allUniqueTables);
+    console.log("Initialized visible tables:", Array.from(visibleTables));
+
     // Draw initial chart
     drawTimeSeriesChart();
   } catch (e) {
@@ -1499,6 +1584,10 @@ function drawTimeSeriesChart() {
   const container = document.getElementById("time-series-chart-container");
   if (!container) return;
 
+  // ALWAYS update legend first using the MASTER TABLE LIST
+  // This ensures ALL tables are always shown in the legend
+  updateTimeSeriesLegend(allUniqueTables);
+
   if (timeSeriesData.length === 0) {
     container.innerHTML = "<p>No time series data available</p>";
     return;
@@ -1509,14 +1598,22 @@ function drawTimeSeriesChart() {
   if (currentTimeSeriesView === "recent") {
     startYear = timeSeriesConfig.recentStartYear;
     endYear = timeSeriesConfig.recentEndYear;
+  } else if (currentTimeSeriesView === "custom") {
+    startYear = customStartYear;
+    endYear = customEndYear;
   } else {
     startYear = timeSeriesConfig.historicalStartYear;
     endYear = timeSeriesConfig.historicalEndYear;
   }
 
-  // Filter data by year range and group by table
+  // Filter data by year range, visible tables, and group by table
   const tableData = {};
   timeSeriesData.forEach(function(row) {
+    // Only include visible tables
+    if (!visibleTables.has(row.table_name)) {
+      return;
+    }
+
     if (row.year >= startYear && row.year <= endYear) {
       if (!tableData[row.table_name]) {
         tableData[row.table_name] = [];
@@ -1635,21 +1732,23 @@ function drawTimeSeriesChart() {
   html += '</svg>';
 
   container.innerHTML = html;
-
-  // Update legend
-  updateTimeSeriesLegend(tables);
 }
 
-function updateTimeSeriesLegend(tables) {
+function updateTimeSeriesLegend(allTables) {
   const legendContainer = document.getElementById("time-series-legend");
   if (!legendContainer) return;
 
   let html = "";
-  tables.forEach(function(table) {
+  allTables.forEach(function(table) {
     const color = TIME_SERIES_COLORS[table] || "#64748b";
-    html += '<div style="display: flex; align-items: center; gap: 8px;">';
-    html += '  <div style="width: 30px; height: 3px; background-color: ' + color + ';"></div>';
-    html += '  <span style="font-size: 0.9em; color: #475569; font-weight: 500;">' + table + '</span>';
+    const isVisible = visibleTables.has(table);
+    const inactiveClass = isVisible ? "" : " inactive";
+
+    html += '<div class="legend-item' + inactiveClass + '" onclick="toggleTableVisibility(\'' + table + '\')" data-table="' + table + '">';
+    html += '  <div style="display: flex; align-items: center; gap: 8px;">';
+    html += '    <div class="legend-line" style="width: 30px; height: 3px; background-color: ' + color + ';"></div>';
+    html += '    <span class="legend-label" style="font-size: 0.9em; color: #475569; font-weight: 500;">' + table + '</span>';
+    html += '  </div>';
     html += '</div>';
   });
 
