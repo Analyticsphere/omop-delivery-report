@@ -453,7 +453,7 @@ parse_delivery_metrics <- function(delivery_data) {
 #' Apply type concept grouping rules
 #'
 #' Categorizes OMOP type concepts into broader groups (EHR, Claims, Disease registry,
-#' Patient reported, Other) based on naming patterns.
+#' Patient reported, Unlabeled, Other) based on naming patterns.
 #'
 #' @param type_concepts Tibble with columns: table_name, type_concept, count
 #' @return Tibble with additional column: type_group
@@ -462,6 +462,11 @@ group_type_concepts <- function(type_concepts) {
   type_concepts %>%
     dplyr::mutate(
       type_group = dplyr::case_when(
+        # Unlabeled group (NULL, blank, "0", or "No matching concept")
+        is.na(type_concept) |
+          type_concept == "" |
+          type_concept == "0" |
+          tolower(type_concept) == "no matching concept" ~ "Unlabeled",
         # EHR group (case-sensitive)
         stringr::str_detect(type_concept, "EHR") ~ "EHR",
         # Claims group (case-insensitive)
@@ -665,6 +670,7 @@ get_type_concept_colors <- function() {
     "Claims" = "#EFC000",        # Yellow
     "Disease registry" = "#868686", # Gray
     "Patient reported" = "#CD534C", # Red
+    "Unlabeled" = "#2d2d2d",     # Very dark gray (almost black)
     "Other" = "#7AA6DC"          # Light blue
   )
 }

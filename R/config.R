@@ -38,6 +38,7 @@ default_config <- function() {
         claims = "#EFC000",
         disease_registry = "#868686",
         patient_reported = "#CD534C",
+        unlabeled = "#2d2d2d",
         other = "#7AA6DC"
       ),
       dqd_scores = list(
@@ -97,6 +98,10 @@ default_config <- function() {
           "Patient Self-Reported Medication"
         ),
         case_sensitive = TRUE
+      ),
+      unlabeled = list(
+        exact_matches = c("No matching concept", "0", ""),
+        case_sensitive = FALSE
       )
     )
   )
