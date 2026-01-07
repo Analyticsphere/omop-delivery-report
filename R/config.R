@@ -36,9 +36,9 @@ default_config <- function() {
       type_concepts = list(
         ehr = "#0073C2",
         claims = "#EFC000",
-        disease_registry = "#868686",
+        disease_registry = "#A95AA1",
         patient_reported = "#CD534C",
-        unlabeled = "#2d2d2d",
+        unlabeled = "#868686",
         other = "#7AA6DC"
       ),
       dqd_scores = list(
@@ -103,6 +103,16 @@ default_config <- function() {
         exact_matches = c("No matching concept", "0", ""),
         case_sensitive = FALSE
       )
+    ),
+
+    # Canonical order for type concept groups (used for consistent display)
+    type_concept_group_order = c(
+      "EHR",
+      "Claims",
+      "Disease registry",
+      "Patient reported",
+      "Other",
+      "Unlabeled"
     )
   )
 }
@@ -146,6 +156,14 @@ get_invalid_concepts_threshold <- function(config = default_config()) {
 #' @return Named character vector of hex colors
 get_type_concept_colors <- function(config = default_config()) {
   unlist(config$colors$type_concepts)
+}
+
+#' Get canonical order for type concept groups
+#'
+#' @param config Configuration list from merge_config()
+#' @return Character vector of group names in display order
+get_type_concept_group_order <- function(config = default_config()) {
+  config$type_concept_group_order
 }
 
 #' Get DQD score classification thresholds

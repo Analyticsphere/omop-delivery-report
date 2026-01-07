@@ -485,6 +485,52 @@ group_type_concepts <- function(type_concepts) {
     )
 }
 
+#' Ensure all type concept groups are present and ordered
+#'
+#' Takes aggregated type concept data and ensures all groups from the canonical
+#' order are present (with 0 counts if missing), then orders them consistently.
+#'
+#' @param type_concept_data Tibble with columns: type_group, count (and optionally others)
+#' @param config Configuration list from merge_config()
+#' @return Tibble with all groups present and properly ordered
+ensure_all_type_groups <- function(type_concept_data, config = default_config()) {
+  all_groups <- get_type_concept_group_order(config)
+
+  # Create a complete template with all groups
+  complete_groups <- tibble::tibble(
+    type_group = all_groups,
+    count = 0
+  )
+
+  # Merge with actual data, keeping all groups
+  result <- complete_groups %>%
+    dplyr::left_join(
+      type_concept_data %>% dplyr::select(type_group, count),
+      by = "type_group",
+      suffix = c("_template", "_actual")
+    ) %>%
+    dplyr::mutate(
+      count = dplyr::coalesce(count_actual, count_template)
+    ) %>%
+    dplyr::select(-count_template, -count_actual)
+
+  # If original data had additional columns, merge them back
+  extra_cols <- setdiff(names(type_concept_data), c("type_group", "count"))
+  if (length(extra_cols) > 0) {
+    result <- result %>%
+      dplyr::left_join(
+        type_concept_data %>% dplyr::select(type_group, dplyr::all_of(extra_cols)),
+        by = "type_group"
+      )
+  }
+
+  # Ensure proper ordering
+  result %>%
+    dplyr::mutate(type_group = factor(type_group, levels = all_groups)) %>%
+    dplyr::arrange(type_group) %>%
+    dplyr::mutate(type_group = as.character(type_group))
+}
+
 # ------------------------------------------------------------------------------
 # 5. DQD SCORE CALCULATIONS
 # ------------------------------------------------------------------------------
@@ -668,9 +714,9 @@ get_type_concept_colors <- function() {
   c(
     "EHR" = "#0073C2",           # Blue
     "Claims" = "#EFC000",        # Yellow
-    "Disease registry" = "#868686", # Gray
+    "Disease registry" = "#A95AA1", # Purple/Magenta
     "Patient reported" = "#CD534C", # Red
-    "Unlabeled" = "#2d2d2d",     # Very dark gray (almost black)
+    "Unlabeled" = "#868686",     # Gray
     "Other" = "#7AA6DC"          # Light blue
   )
 }
