@@ -141,7 +141,7 @@ build_delivery_overview_section <- function(metrics, dqd_scores, num_participant
             <div class="metric-card">
                 <div class="metric-label">Participants</div>
                 <div class="metric-value">%s</div>
-                <div class="metric-sublabel">Total persons in dataset</div>
+                <div class="metric-sublabel">Total identifiable persons in dataset</div>
             </div>
 
             <div class="metric-card">
@@ -330,7 +330,7 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
     }
 
     delivered <- tbl %in% metrics$valid_tables$table_name
-    status_icon <- if (delivered) "Delivered" else "○ Not Delivered"
+    status_icon <- if (delivered) "Delivered" else "Not Delivered"
     status_class <- if (delivered) "delivered" else "not-delivered"
 
     # Validate row counts: initial - quality_issues + harmonization = final

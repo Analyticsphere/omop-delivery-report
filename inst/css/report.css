@@ -548,6 +548,11 @@ th {
   text-transform: uppercase;
 }
 
+/* Status column should have enough width for badges */
+th:nth-child(2) {
+  min-width: 120px;
+}
+
 th.sortable {
   cursor: pointer;
   user-select: none;
@@ -591,6 +596,11 @@ td {
   border-bottom: 1px solid #f1f5f9;
   font-size: 0.95em;
   color: #1e293b;
+}
+
+/* Status column cells should have enough width for badges */
+td:nth-child(2) {
+  min-width: 140px;
 }
 
 tbody tr:hover {
@@ -665,12 +675,13 @@ tr.row-warning:hover {
 
 .status-badge {
   display: inline-block;
-  padding: 6px 12px;
+  padding: 6px 10px;
   border-radius: 4px;
-  font-size: 0.75em;
+  font-size: 0.7em;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
 .status-delivered {
