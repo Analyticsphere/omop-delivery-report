@@ -493,7 +493,8 @@ function buildTableDrilldownContent(tableData) {
   if (tableData.type_concepts && tableData.type_concepts.length > 0) {
     html += `
       <div class="subsection">
-        <h4>Type Concept Breakdown</h4>
+        <h4 style="margin-bottom: 4px;">Type Concept Breakdown</h4>
+        <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 16px;">${tableData.name}</div>
         <div class="chart-container">
           ${buildTypeConceptChart(tableData.type_concepts)}
         </div>
