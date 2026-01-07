@@ -638,13 +638,13 @@ build_vocabulary_harmonization_section <- function(metrics, has_delivery_data = 
             <h2>Vocabulary Harmonization</h2>
         </div>
 
-        <div class="metrics-grid" style="margin-bottom: 30px;">
-            <div class="metric-card">
+        <div style="display: flex; gap: 32px; margin-bottom: 30px; justify-content: center; flex-wrap: wrap;">
+            <div class="metric-card" style="flex: 0 1 400px;">
                 <div class="metric-label">Delivered Vocabulary Version</div>
                 <div class="metric-value" style="font-size: 1.1em;">%s</div>
             </div>
 
-            <div class="metric-card">
+            <div class="metric-card" style="flex: 0 1 400px;">
                 <div class="metric-label">Standardized to Vocabulary Version</div>
                 <div class="metric-value" style="font-size: 1.1em;">%s</div>
             </div>
@@ -819,25 +819,25 @@ build_technical_summary_section <- function(metrics, has_delivery_data = TRUE) {
             <h2>Technical Summary</h2>
         </div>
 
-        <div class="metrics-grid">
-            <div class="metric-card">
+        <div style="display: flex; gap: 20px; margin-bottom: 30px; justify-content: center; flex-wrap: wrap;">
+            <div class="metric-card" style="flex: 0 1 240px;">
                 <div class="metric-label">Processing Date</div>
-                <div class="metric-value">%s</div>
+                <div class="metric-value" style="font-size: 1.5em;">%s</div>
             </div>
 
-            <div class="metric-card">
+            <div class="metric-card" style="flex: 0 1 240px;">
                 <div class="metric-label">Delivered CDM Version</div>
-                <div class="metric-value">%s</div>
+                <div class="metric-value" style="font-size: 1.5em;">%s</div>
             </div>
 
-            <div class="metric-card">
+            <div class="metric-card" style="flex: 0 1 240px;">
                 <div class="metric-label">Standardized CDM Version</div>
-                <div class="metric-value">%s</div>
+                <div class="metric-value" style="font-size: 1.5em;">%s</div>
             </div>
 
-            <div class="metric-card">
+            <div class="metric-card" style="flex: 0 1 240px;">
                 <div class="metric-label">File Format</div>
-                <div class="metric-value">%s</div>
+                <div class="metric-value" style="font-size: 1.5em;">%s</div>
             </div>
         </div>
         <p style="text-align: center; margin-top: 30px; color: #94a3b8; font-size: 0.9em;">Pipeline Version: %s</p>
