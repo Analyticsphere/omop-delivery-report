@@ -119,6 +119,7 @@ create_empty_metrics <- function() {
     default_date_values = tibble(table_name = character(), column_name = character(), count = numeric()),
     invalid_concepts = tibble(table_name = character(), column_name = character(), count = numeric()),
     missing_columns = tibble(table_name = character(), column_name = character()),
+    time_series = tibble(table_name = character(), year = integer(), count = numeric()),
     metadata = list(
       site = "Unknown",
       delivery_date = "Unknown",
@@ -442,6 +443,17 @@ parse_delivery_metrics <- function(delivery_data) {
   if (length(metrics$missing_person_id_count) == 0) {
     metrics$missing_person_id_count <- 0
   }
+
+  # Parse time series row counts
+  metrics$time_series <- delivery_data %>%
+    dplyr::filter(stringr::str_detect(name, "^Time series row count:")) %>%
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Time series row count: (\\w+)\\.(\\d+)")[, 2],
+      year = as.integer(stringr::str_match(name, "Time series row count: (\\w+)\\.(\\d+)")[, 3]),
+      count = value_as_number
+    ) %>%
+    dplyr::select(table_name, year, count) %>%
+    dplyr::arrange(table_name, year)
 
   return(metrics)
 }

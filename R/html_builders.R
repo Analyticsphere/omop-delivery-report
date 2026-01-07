@@ -37,6 +37,7 @@ build_sidebar <- function(metrics, dqd_score, has_delivery_data = TRUE, has_dqd_
             <a href="#overview" class="sidebar-nav-item" onclick="scrollToSection(event, \'overview\')">Overview</a>
             <a href="#dqd-grid" class="sidebar-nav-item" onclick="scrollToSection(event, \'dqd-grid\')">DQD Results</a>
             <a href="#delivery-report" class="sidebar-nav-item" onclick="scrollToSection(event, \'delivery-report\')">Tables</a>
+            <a href="#time-series" class="sidebar-nav-item" onclick="scrollToSection(event, \'time-series\')">Data Timeline</a>
             <a href="#vocab-harmonization" class="sidebar-nav-item" onclick="scrollToSection(event, \'vocab-harmonization\')">Vocabularies</a>
             <a href="#technical-summary" class="sidebar-nav-item" onclick="scrollToSection(event, \'technical-summary\')">Technical</a>
         </nav>
@@ -463,6 +464,97 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
     group_id, # tbody ID
     table_rows,
     group_id # type concepts div ID
+  )
+}
+
+#' Build time series section
+build_time_series_section <- function(metrics, has_delivery_data = TRUE) {
+
+  # Return unavailable message if delivery data is missing
+  if (!has_delivery_data) {
+    return(build_data_unavailable_message("Delivery", "Data Timeline"))
+  }
+
+  # Check if time series data exists
+  if (nrow(metrics$time_series) == 0) {
+    return(sprintf('
+    <div class="section" id="time-series">
+        <div class="section-header">
+            <span class="section-icon"></span>
+            <h2>Data Timeline</h2>
+        </div>
+        <p class="text-muted">No time series data available</p>
+    </div>'))
+  }
+
+  # Extract delivery date and calculate year ranges
+  delivery_date_str <- metrics$metadata$delivery_date
+
+  # Parse delivery date to get year
+  delivery_year <- tryCatch({
+    if (is.na(delivery_date_str) || delivery_date_str == "Unknown" || delivery_date_str == "") {
+      as.integer(format(Sys.Date(), "%Y"))
+    } else {
+      as.integer(format(as.Date(delivery_date_str), "%Y"))
+    }
+  }, error = function(e) {
+    as.integer(format(Sys.Date(), "%Y"))
+  })
+
+  # Calculate year ranges
+  recent_start_year <- delivery_year - 15
+  recent_end_year <- delivery_year - 1
+  historical_start_year <- 1970
+  historical_end_year <- delivery_year
+
+  # Convert time series data to JSON for JavaScript
+  time_series_json <- jsonlite::toJSON(metrics$time_series, dataframe = "rows")
+
+  sprintf('
+    <div class="section" id="time-series">
+        <div class="section-header">
+            <span class="section-icon"></span>
+            <h2>Data Timeline</h2>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+            <div class="toggle-buttons">
+                <button id="btn-recent-view" class="toggle-button active" onclick="switchTimeSeriesView(\'recent\')">
+                    Last 15 Years (%d\u2013%d)
+                </button>
+                <button id="btn-historical-view" class="toggle-button" onclick="switchTimeSeriesView(\'historical\')">
+                    Historical (1970\u2013%d)
+                </button>
+            </div>
+        </div>
+
+        <div id="time-series-chart-container" style="width: 100%%; height: 500px; position: relative;">
+            <!-- Chart will be rendered by JavaScript -->
+        </div>
+
+        <div id="time-series-legend" style="margin-top: 24px; display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;">
+            <!-- Legend will be populated by JavaScript -->
+        </div>
+
+        <script type="application/json" id="time-series-data">
+        %s
+        </script>
+        <script type="application/json" id="time-series-config">
+        {
+            "recentStartYear": %d,
+            "recentEndYear": %d,
+            "historicalStartYear": %d,
+            "historicalEndYear": %d,
+            "deliveryYear": %d
+        }
+        </script>
+    </div>',
+    recent_start_year, recent_end_year,
+    historical_end_year,
+    time_series_json,
+    recent_start_year, recent_end_year,
+    historical_start_year, historical_end_year,
+    delivery_year
   )
 }
 

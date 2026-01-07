@@ -836,3 +836,41 @@ tr.row-warning:hover {
 .info-box.data-unavailable p:last-child {
   margin-bottom: 0;
 }
+
+/* ============================================================================
+   TOGGLE BUTTONS (DATA TIMELINE)
+   ============================================================================ */
+
+.toggle-buttons {
+  display: flex;
+  gap: 12px;
+  background: #f1f5f9;
+  padding: 6px;
+  border-radius: 10px;
+  width: fit-content;
+}
+
+.toggle-button {
+  padding: 10px 24px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.95em;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.toggle-button:hover {
+  background: rgba(255, 255, 255, 0.6);
+  color: #0f172a;
+}
+
+.toggle-button.active {
+  background: white;
+  color: #0f172a;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}

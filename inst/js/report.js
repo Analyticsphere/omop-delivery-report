@@ -131,7 +131,7 @@ function showTableDrilldown(tableName) {
   }
 
   // Hide all other sections
-  const sectionsToHide = ["overview", "dqd-grid", "delivery-report", "vocab-harmonization", "technical-summary"];
+  const sectionsToHide = ["overview", "dqd-grid", "delivery-report", "time-series", "vocab-harmonization", "technical-summary"];
   sectionsToHide.forEach(function(sectionId) {
     const section = document.getElementById(sectionId);
     if (section) {
@@ -170,7 +170,7 @@ function hideTableDrilldown() {
   }
 
   // Show all other sections
-  const sectionsToShow = ["overview", "dqd-grid", "delivery-report", "vocab-harmonization", "technical-summary"];
+  const sectionsToShow = ["overview", "dqd-grid", "delivery-report", "time-series", "vocab-harmonization", "technical-summary"];
   sectionsToShow.forEach(function(sectionId) {
     const section = document.getElementById(sectionId);
     if (section) {
@@ -1376,6 +1376,9 @@ document.addEventListener("DOMContentLoaded", function() {
   // Initialize vocabulary harmonization section
   initializeVocabHarmonization();
 
+  // Initialize data timeline section
+  initializeTimeSeries();
+
   // Set up scroll tracking for sidebar navigation
   window.addEventListener("scroll", updateActiveNavOnScroll);
   updateActiveNavOnScroll();
@@ -1430,6 +1433,228 @@ window.addEventListener("load", function() {
   // Set initial state for the main report view
   history.replaceState({ view: "main" }, "", window.location.pathname);
 });
+
+// ============================================================================
+// DATA TIMELINE VISUALIZATION
+// ============================================================================
+
+// Global state for data timeline (time series)
+let currentTimeSeriesView = "recent";
+let timeSeriesData = [];
+let timeSeriesConfig = {};
+
+// Table colors (must match harmonization Sankey colors)
+const TIME_SERIES_COLORS = {
+  "condition_occurrence": "#ef4444",  // Red
+  "device_exposure": "#8b5cf6",       // Purple
+  "drug_exposure": "#3b82f6",         // Blue
+  "measurement": "#14b8a6",           // Teal
+  "note": "#6366f1",                  // Indigo
+  "observation": "#f97316",           // Orange
+  "procedure_occurrence": "#10b981",  // Green
+  "specimen": "#ec4899",              // Pink
+  "visit_occurrence": "#eab308"       // Yellow
+};
+
+function switchTimeSeriesView(view) {
+  console.log("Switching data timeline view to:", view);
+  currentTimeSeriesView = view;
+
+  // Update button states
+  document.getElementById("btn-recent-view").classList.toggle("active", view === "recent");
+  document.getElementById("btn-historical-view").classList.toggle("active", view === "historical");
+
+  // Redraw chart
+  drawTimeSeriesChart();
+}
+
+function initializeTimeSeries() {
+  console.log("Initializing data timeline...");
+
+  // Load data from embedded JSON
+  const dataElement = document.getElementById("time-series-data");
+  const configElement = document.getElementById("time-series-config");
+
+  if (!dataElement || !configElement) {
+    console.log("Data timeline data not found");
+    return;
+  }
+
+  try {
+    timeSeriesData = JSON.parse(dataElement.textContent);
+    timeSeriesConfig = JSON.parse(configElement.textContent);
+    console.log("Loaded data timeline data:", timeSeriesData.length, "rows");
+    console.log("Config:", timeSeriesConfig);
+
+    // Draw initial chart
+    drawTimeSeriesChart();
+  } catch (e) {
+    console.error("Error parsing data timeline data:", e);
+  }
+}
+
+function drawTimeSeriesChart() {
+  console.log("Drawing data timeline chart for view:", currentTimeSeriesView);
+
+  const container = document.getElementById("time-series-chart-container");
+  if (!container) return;
+
+  if (timeSeriesData.length === 0) {
+    container.innerHTML = "<p>No time series data available</p>";
+    return;
+  }
+
+  // Determine year range based on view
+  let startYear, endYear;
+  if (currentTimeSeriesView === "recent") {
+    startYear = timeSeriesConfig.recentStartYear;
+    endYear = timeSeriesConfig.recentEndYear;
+  } else {
+    startYear = timeSeriesConfig.historicalStartYear;
+    endYear = timeSeriesConfig.historicalEndYear;
+  }
+
+  // Filter data by year range and group by table
+  const tableData = {};
+  timeSeriesData.forEach(function(row) {
+    if (row.year >= startYear && row.year <= endYear) {
+      if (!tableData[row.table_name]) {
+        tableData[row.table_name] = [];
+      }
+      tableData[row.table_name].push({ year: row.year, count: row.count });
+    }
+  });
+
+  // Sort each table's data by year
+  Object.keys(tableData).forEach(function(table) {
+    tableData[table].sort(function(a, b) { return a.year - b.year; });
+  });
+
+  const tables = Object.keys(tableData).sort();
+  console.log("Tables with data:", tables);
+
+  if (tables.length === 0) {
+    container.innerHTML = "<p>No data available for the selected time range</p>";
+    return;
+  }
+
+  // Calculate dimensions
+  const containerWidth = container.clientWidth;
+  const containerHeight = 500;
+  const margin = { top: 20, right: 120, bottom: 60, left: 80 };
+  const chartWidth = containerWidth - margin.left - margin.right;
+  const chartHeight = containerHeight - margin.top - margin.bottom;
+
+  // Calculate scales
+  const allCounts = [];
+  Object.keys(tableData).forEach(function(table) {
+    tableData[table].forEach(function(d) {
+      allCounts.push(d.count);
+    });
+  });
+
+  const maxCount = Math.max.apply(null, allCounts);
+  const minCount = 0;
+
+  // Create x-scale (year)
+  const xScale = function(year) {
+    return margin.left + (year - startYear) / (endYear - startYear) * chartWidth;
+  };
+
+  // Create y-scale (count)
+  const yScale = function(count) {
+    return margin.top + chartHeight - (count - minCount) / (maxCount - minCount) * chartHeight;
+  };
+
+  // Build SVG
+  let html = '<svg width="' + containerWidth + '" height="' + containerHeight + '" style="background: white; border-radius: 8px; border: 2px solid #e2e8f0;">';
+
+  // Draw grid lines (horizontal)
+  const numGridLines = 5;
+  for (let i = 0; i <= numGridLines; i++) {
+    const y = margin.top + (chartHeight / numGridLines) * i;
+    html += '<line x1="' + margin.left + '" y1="' + y + '" x2="' + (margin.left + chartWidth) + '" y2="' + y + '" stroke="#e2e8f0" stroke-width="1"/>';
+
+    // Y-axis labels
+    const labelCount = maxCount - (maxCount / numGridLines) * i;
+    html += '<text x="' + (margin.left - 10) + '" y="' + y + '" text-anchor="end" dominant-baseline="middle" font-size="12" fill="#64748b">' + formatNumber(Math.round(labelCount)) + '</text>';
+  }
+
+  // Draw x-axis ticks and labels
+  const yearRange = endYear - startYear;
+  const tickInterval = yearRange > 30 ? 5 : (yearRange > 15 ? 2 : 1);
+
+  for (let year = startYear; year <= endYear; year += tickInterval) {
+    const x = xScale(year);
+    html += '<line x1="' + x + '" y1="' + (margin.top + chartHeight) + '" x2="' + x + '" y2="' + (margin.top + chartHeight + 6) + '" stroke="#64748b" stroke-width="1"/>';
+    html += '<text x="' + x + '" y="' + (margin.top + chartHeight + 20) + '" text-anchor="middle" font-size="12" fill="#64748b">' + year + '</text>';
+  }
+
+  // Draw axes
+  html += '<line x1="' + margin.left + '" y1="' + margin.top + '" x2="' + margin.left + '" y2="' + (margin.top + chartHeight) + '" stroke="#1e293b" stroke-width="2"/>';
+  html += '<line x1="' + margin.left + '" y1="' + (margin.top + chartHeight) + '" x2="' + (margin.left + chartWidth) + '" y2="' + (margin.top + chartHeight) + '" stroke="#1e293b" stroke-width="2"/>';
+
+  // Axis labels
+  html += '<text x="' + (margin.left + chartWidth / 2) + '" y="' + (containerHeight - 10) + '" text-anchor="middle" font-size="14" font-weight="600" fill="#0f172a">Year</text>';
+  html += '<text x="' + (margin.left - 60) + '" y="' + (margin.top + chartHeight / 2) + '" text-anchor="middle" font-size="14" font-weight="600" fill="#0f172a" transform="rotate(-90 ' + (margin.left - 60) + ' ' + (margin.top + chartHeight / 2) + ')">Row Count</text>';
+
+  // Draw lines for each table
+  tables.forEach(function(table) {
+    const data = tableData[table];
+    const color = TIME_SERIES_COLORS[table] || "#64748b";
+
+    if (data.length === 0) return;
+
+    // Build path
+    let pathD = "M";
+    data.forEach(function(d, i) {
+      const x = xScale(d.year);
+      const y = yScale(d.count);
+      if (i === 0) {
+        pathD += x + "," + y;
+      } else {
+        pathD += " L" + x + "," + y;
+      }
+    });
+
+    // Draw line
+    html += '<path d="' + pathD + '" stroke="' + color + '" stroke-width="2.5" fill="none" style="cursor: pointer;">';
+    html += '<title>' + table + '</title>';
+    html += '</path>';
+
+    // Draw points
+    data.forEach(function(d) {
+      const x = xScale(d.year);
+      const y = yScale(d.count);
+      html += '<circle cx="' + x + '" cy="' + y + '" r="4" fill="' + color + '" stroke="white" stroke-width="1.5" style="cursor: pointer;">';
+      html += '<title>' + table + ' (' + d.year + '): ' + formatNumber(d.count) + '</title>';
+      html += '</circle>';
+    });
+  });
+
+  html += '</svg>';
+
+  container.innerHTML = html;
+
+  // Update legend
+  updateTimeSeriesLegend(tables);
+}
+
+function updateTimeSeriesLegend(tables) {
+  const legendContainer = document.getElementById("time-series-legend");
+  if (!legendContainer) return;
+
+  let html = "";
+  tables.forEach(function(table) {
+    const color = TIME_SERIES_COLORS[table] || "#64748b";
+    html += '<div style="display: flex; align-items: center; gap: 8px;">';
+    html += '  <div style="width: 30px; height: 3px; background-color: ' + color + ';"></div>';
+    html += '  <span style="font-size: 0.9em; color: #475569; font-weight: 500;">' + table + '</span>';
+    html += '</div>';
+  });
+
+  legendContainer.innerHTML = html;
+}
 
 // ============================================================================
 // END OF JAVASCRIPT

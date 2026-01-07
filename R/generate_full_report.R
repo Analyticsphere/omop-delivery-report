@@ -185,6 +185,7 @@ build_complete_html_report <- function(metrics, dqd_data, dqd_scores, group_dqd_
   dqd_grid <- build_dqd_grid_section(dqd_scores, has_dqd_data)
   delivery_report <- build_delivery_report_section(metrics, table_groups, group_dqd_scores, has_delivery_data, has_dqd_data)
   drilldown <- build_table_drilldown_section()
+  time_series <- build_time_series_section(metrics, has_delivery_data)
   vocab_harm <- build_vocabulary_harmonization_section(metrics, has_delivery_data)
   tech_summary <- build_technical_summary_section(metrics, has_delivery_data)
   javascript <- get_full_javascript()
@@ -202,6 +203,7 @@ build_complete_html_report <- function(metrics, dqd_data, dqd_scores, group_dqd_
         <div class="main-content">
             %s
             <div class="container">
+                %s
                 %s
                 %s
                 %s
@@ -226,6 +228,7 @@ build_complete_html_report <- function(metrics, dqd_data, dqd_scores, group_dqd_
     dqd_grid,
     delivery_report,
     drilldown,
+    time_series,
     vocab_harm,
     tech_summary,
     report_data_json,
