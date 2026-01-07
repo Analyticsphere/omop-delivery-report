@@ -494,8 +494,8 @@ function buildTableDrilldownContent(tableData) {
     html += `
       <div class="subsection">
         <h4 style="margin-bottom: 4px;">Type Concept Breakdown</h4>
-        <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 16px;">${tableData.name}</div>
-        <div class="chart-container">
+        <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; text-align: center;">${tableData.name}</div>
+        <div class="chart-container" style="margin-top: 16px;">
           ${buildTypeConceptChart(tableData.type_concepts)}
         </div>
       </div>
@@ -1134,7 +1134,7 @@ function buildTypeConceptChart(typeConceptsData) {
 
   var html = "";
 
-  html += '<div style="display: flex; gap: 48px; margin: 20px 0; align-items: flex-start;">';
+  html += '<div style="display: flex; gap: 48px; margin: 20px 0; align-items: flex-start; justify-content: center;">';
 
   html += '<div style="flex-shrink: 0; display: flex; align-items: center; padding-top: 40px;">';
   html += buildPieChart(sortedGroups, total);

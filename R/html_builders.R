@@ -131,14 +131,7 @@ build_delivery_overview_section <- function(metrics, dqd_scores, num_participant
             <h2>Delivery Overview</h2>
         </div>
 
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-label">Data Quality Score</div>
-                <div class="text-center mt-20">
-                    <div class="dqd-score %s">%s</div>
-                </div>
-            </div>
-
+        <div class="overview-metrics-grid">
             <div class="metric-card">
                 <div class="metric-label">Tables Delivered</div>
                 <div class="metric-value">%s</div>
@@ -149,6 +142,13 @@ build_delivery_overview_section <- function(metrics, dqd_scores, num_participant
                 <div class="metric-label">Participants</div>
                 <div class="metric-value">%s</div>
                 <div class="metric-sublabel">Total persons in dataset</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Data Quality Score</div>
+                <div class="text-center mt-20">
+                    <div class="dqd-score %s">%s</div>
+                </div>
             </div>
 
             <div class="metric-card%s">
@@ -164,16 +164,19 @@ build_delivery_overview_section <- function(metrics, dqd_scores, num_participant
             </div>
         </div>
 
-        <div class="chart-container">
-            <div class="chart-title">Type Concept Breakdown (Dataset-wide)</div>
-            <div id="dataset-type-concepts" class="type-concept-chart">
-                <!-- Dynamically populated by JavaScript -->
+        <div style="margin-top: 32px;">
+            <div class="chart-title" style="margin-bottom: 4px;">Type Concept Breakdown</div>
+            <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; text-align: center;">Dataset-wide</div>
+            <div class="chart-container" style="margin-top: 16px;">
+                <div id="dataset-type-concepts" class="type-concept-chart">
+                    <!-- Dynamically populated by JavaScript -->
+                </div>
             </div>
         </div>
     </div>',
-    dqd_class, dqd_score_display,
     tables_delivered_display,
     participants_display,
+    dqd_class, dqd_score_display,
     missing_warning, missing_icon, missing_person_display, person_word,
     rows_warning, rows_icon, rows_removed_display
   )
@@ -417,26 +420,26 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
   }), collapse = "\n")
 
   dqd_note <- if (!is.na(group_dqd_score)) {
-    sprintf('<p><strong>Data Quality Score for this group:</strong> <span class="dqd-inline">%s%%</span></p>',
+    sprintf('<p style="margin: 0 0 4px 0;"><strong>Data Quality Score for this group:</strong> <span class="dqd-inline">%s%%</span></p>',
             group_dqd_score)
   } else {
-    '<p><strong>Data Quality Score:</strong> <span class="text-muted">Not available</span></p>'
+    '<p style="margin: 0 0 4px 0;"><strong>Data Quality Score:</strong> <span class="text-muted">Not available</span></p>'
   }
 
-  # Dynamic Type Concept Breakdown heading based on group name
-  type_concept_heading <- if (group_name == "All Tables") {
-    "Type Concept Breakdown (All Tables)"
+  # Dynamic Type Concept Breakdown subheader based on group name
+  type_concept_subheader <- if (group_name == "All Tables") {
+    "All Tables"
   } else {
-    sprintf("Type Concept Breakdown (%s Tables)", group_name)
+    sprintf("%s Tables", group_name)
   }
 
   sprintf('
     <div class="table-group-content" id="group-%s" style="%s">
-        <h3>%s</h3>
+        <h3 style="margin: 0 0 8px 0; font-size: 1.3em; color: #0f172a;">%s</h3>
 
         %s
 
-        <h4 style="margin-top: 32px; margin-bottom: 16px; font-size: 1.1em; color: #0f172a; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Table Delivery Summary</h4>
+        <h4 style="margin-top: 12px; margin-bottom: 8px; font-size: 1.1em; color: #0f172a; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Table Delivery Summary</h4>
         <div class="table-container">
             <table id="delivery-table-%s">
                 <thead>
@@ -457,8 +460,9 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
         </div>
 
         <div class="subsection">
-            <h4>%s</h4>
-            <div id="group-type-concepts-%s" class="chart-container">
+            <h4 style="margin-bottom: 4px;">Type Concept Breakdown</h4>
+            <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; text-align: center;">%s</div>
+            <div id="group-type-concepts-%s" class="chart-container" style="margin-top: 8px;">
                 <!-- Dynamically populated by JavaScript -->
             </div>
         </div>
@@ -470,7 +474,7 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
     group_id, group_id, group_id, group_id, group_id, group_id, # onclick handlers (6 sortable columns - Status is not sortable)
     group_id, # tbody ID
     table_rows,
-    type_concept_heading, # dynamic heading for Type Concept Breakdown
+    type_concept_subheader, # dynamic subheader for Type Concept Breakdown
     group_id # type concepts div ID
   )
 }

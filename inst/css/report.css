@@ -40,7 +40,7 @@ body {
   position: fixed;
   left: 0;
   top: 0;
-  width: 280px;
+  width: 220px;
   height: 100vh;
   background: #0f172a;
   color: white;
@@ -50,7 +50,7 @@ body {
 }
 
 .sidebar-header {
-  padding: 40px 32px 32px;
+  padding: 40px 24px 32px;
   border-bottom: 1px solid #1e293b;
 }
 
@@ -74,7 +74,7 @@ body {
 
 .sidebar-nav-item {
   display: block;
-  padding: 14px 32px;
+  padding: 14px 24px;
   color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
   font-size: 0.95em;
@@ -99,7 +99,7 @@ body {
 
 /* Main Content Area */
 .main-content {
-  margin-left: 280px;
+  margin-left: 220px;
   flex: 1;
   min-height: 100vh;
 }
@@ -168,7 +168,7 @@ body {
 }
 
 .section-header {
-  margin-bottom: 40px;
+  margin-bottom: 16px;
 }
 
 .section-icon {
@@ -182,7 +182,7 @@ body {
   color: #0f172a;
   letter-spacing: -0.3px;
   position: relative;
-  padding-bottom: 16px;
+  padding-bottom: 12px;
 }
 
 .section-header h2::after {
@@ -200,17 +200,18 @@ body {
    ============================================================================ */
 
 .subsection {
-  margin-top: 56px;
-  padding-top: 40px;
+  margin-top: 24px;
+  padding-top: 16px;
   border-top: 1px solid #e5e7eb;
 }
 
 .subsection h4 {
   font-size: 1.15em;
   color: #0f172a;
-  margin-bottom: 28px;
+  margin-bottom: 12px;
   font-weight: 600;
   letter-spacing: -0.2px;
+  text-align: center;
 }
 
 /* ============================================================================
@@ -255,12 +256,65 @@ body {
   color: #047857;
 }
 
+/* Overview metrics grid - responsive layout */
+.overview-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+/* Ensure all cards have consistent height */
+.overview-metrics-grid .metric-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 140px;
+}
+
+/* Responsive breakpoints for card stacking */
+@media (max-width: 1400px) {
+  .overview-metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .overview-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .overview-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Legacy metric cards for drilldown */
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 15px;
   margin-bottom: 40px;
+}
+
+/* Responsive metrics grid */
+@media (max-width: 1400px) {
+  .metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Quality cards grid - 3-2 layout for 5 cards */
@@ -385,8 +439,8 @@ body {
 .controls {
   background: transparent;
   border: none;
-  padding: 0 0 32px 0;
-  margin-bottom: 32px;
+  padding: 0 0 12px 0;
+  margin-bottom: 12px;
   display: flex;
   gap: 20px;
   align-items: flex-end;
@@ -462,7 +516,7 @@ select:focus {
 
 .table-container {
   overflow-x: auto;
-  margin: 24px 0;
+  margin: 8px 0;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -485,7 +539,7 @@ thead {
 }
 
 th {
-  padding: 14px 20px;
+  padding: 14px 12px;
   text-align: left;
   font-weight: 600;
   font-size: 0.8em;
@@ -533,7 +587,7 @@ th.sortable.sort-desc .sort-indicator::after {
 }
 
 td {
-  padding: 14px 20px;
+  padding: 14px 12px;
   border-bottom: 1px solid #f1f5f9;
   font-size: 0.95em;
   color: #1e293b;
@@ -554,6 +608,47 @@ tr.clickable {
 
 tr.clickable:hover {
   background-color: #eff6ff;
+}
+
+/* Responsive table adjustments for smaller screens */
+@media (max-width: 1024px) {
+  th {
+    padding: 12px 8px;
+    font-size: 0.75em;
+  }
+
+  td {
+    padding: 12px 8px;
+    font-size: 0.9em;
+  }
+
+  .dqd-grid-table th {
+    padding: 12px 6px;
+  }
+
+  .dqd-grid-table td {
+    padding: 10px 6px;
+  }
+}
+
+@media (max-width: 640px) {
+  th {
+    padding: 10px 6px;
+    font-size: 0.7em;
+  }
+
+  td {
+    padding: 10px 6px;
+    font-size: 0.85em;
+  }
+
+  .dqd-grid-table th {
+    padding: 10px 4px;
+  }
+
+  .dqd-grid-table td {
+    padding: 8px 4px;
+  }
 }
 
 tr.row-warning {
@@ -597,12 +692,12 @@ tr.row-warning:hover {
 
 .dqd-grid-table th {
   text-align: center;
-  padding: 16px 12px;
+  padding: 14px 8px;
 }
 
 .dqd-grid-table td {
   text-align: center;
-  padding: 14px 12px;
+  padding: 12px 8px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -655,6 +750,8 @@ tr.row-warning:hover {
   padding: 0;
   background: transparent;
   border: none;
+  display: flex;
+  justify-content: center;
 }
 
 .chart-title {
@@ -663,6 +760,7 @@ tr.row-warning:hover {
   color: #0f172a;
   margin-bottom: 24px;
   letter-spacing: -0.2px;
+  text-align: center;
 }
 
 /* ============================================================================
@@ -773,7 +871,7 @@ tr.row-warning:hover {
 }
 
 .mt-20 {
-  margin-top: 24px;
+  margin-top: 8px;
 }
 
 .text-muted {
