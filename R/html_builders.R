@@ -275,20 +275,29 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
     # Otherwise, trust the final_rows artifact
     expected_final <- if (type_concept_total > 0) type_concept_total else final_rows
 
-    # Calculate Harmonization from the EXPECTED (validated) final rows
-    # Special case: If table not delivered (valid_rows = 0) and no actual vocab harmonization occurred,
-    # harmonization should be 0 (not calculated from row difference which may be a data artifact)
-    has_transitions <- nrow(metrics$table_transitions %>%
-                              dplyr::filter(target_table == tbl | source_table == tbl)) > 0
+    # Tables that don't participate in vocabulary harmonization
+    non_harmonized_tables <- c("condition_era", "drug_era", "dose_era", "observation_period", "cdm_source", "person", "death")
 
-    if (valid_rows == 0 && !has_transitions) {
-      # Table not delivered and no vocab harmonization - harmonization should be 0
+    # Calculate total result rows from same-table mappings
+    same_table_result_rows <- metrics$same_table_mappings %>%
+      dplyr::filter(table_name == tbl) %>%
+      dplyr::summarise(total = sum(total_rows, na.rm = TRUE)) %>%
+      dplyr::pull(total)
+    same_table_result_rows <- ifelse(length(same_table_result_rows) > 0, same_table_result_rows[1], 0)
+
+    # Get rows received from OTHER tables (cross-table transitions)
+    transitions_in <- metrics$table_transitions %>%
+      dplyr::filter(target_table == tbl, source_table != tbl) %>%
+      dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
+      dplyr::pull(total)
+    transitions_in <- ifelse(length(transitions_in) > 0, transitions_in[1], 0)
+
+    # Calculate harmonization using the correct formula
+    # harmonization = same_table_result_rows - initial_rows + transitions_in
+    if (tbl %in% non_harmonized_tables) {
       harmonization <- 0
     } else {
-      # Normal case: calculate from expected vs initial
-      # This is the TRUE net impact: expected_final = initial_rows - quality_issues + harmonization
-      # Therefore: harmonization = expected_final - initial_rows + quality_issues
-      harmonization <- expected_final - initial_rows + quality_issues
+      harmonization <- same_table_result_rows - initial_rows + transitions_in
     }
 
     # Format Harmonization with sign

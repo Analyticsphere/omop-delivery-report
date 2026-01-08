@@ -439,11 +439,29 @@ prepare_table_data <- function(table_name, metrics, dqd_score) {
     dplyr::pull(total)
   type_concept_total <- ifelse(length(type_concept_total) > 0, type_concept_total[1], 0)
 
-  # Check if table has vocab harmonization transitions
-  has_transitions <- nrow(transitions %>% dplyr::filter(target_table == !!table_name | source_table == !!table_name)) > 0
+  # Tables that don't participate in vocabulary harmonization
+  # This includes pipeline-derived tables and tables like person/death that are not harmonized
+  non_harmonized_tables <- c("condition_era", "drug_era", "dose_era", "observation_period", "cdm_source", "person", "death")
 
-  # Pipeline-derived tables (skip validation for these)
-  pipeline_derived_tables <- c("condition_era", "drug_era", "dose_era", "observation_period", "cdm_source")
+  # Get same-table mapping details
+  same_table_mappings <- metrics$same_table_mappings %>%
+    dplyr::filter(table_name == !!table_name)
+
+  # Calculate total result rows from same-table mappings
+  # These are RESULT row counts (not source rows)
+  same_table_result_rows <- same_table_mappings %>%
+    dplyr::summarise(total = sum(total_rows, na.rm = TRUE)) %>%
+    dplyr::pull(total)
+  same_table_result_rows <- ifelse(length(same_table_result_rows) > 0, same_table_result_rows[1], 0)
+
+  # Get rows received from OTHER tables (cross-table transitions)
+  transitions_in <- transitions %>%
+    dplyr::filter(target_table == !!table_name, source_table != !!table_name) %>%
+    dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
+    dplyr::pull(total)
+  transitions_in <- ifelse(length(transitions_in) > 0, transitions_in[1], 0)
+
+  has_transitions <- (transitions_in > 0 || same_table_result_rows > 0)
 
   # Determine the correct final row count and validate
   if (type_concept_total > 0) {
@@ -460,20 +478,22 @@ prepare_table_data <- function(table_name, metrics, dqd_score) {
     counts_valid <- TRUE
   }
 
-  # Skip validation warnings for pipeline-derived tables
-  if (table_name %in% pipeline_derived_tables) {
+  # Skip validation warnings for non-harmonized tables
+  if (table_name %in% non_harmonized_tables) {
     counts_valid <- TRUE
   }
 
-  # Calculate harmonization from the EXPECTED (validated) final rows
-  if (valid_rows == 0 && !has_transitions) {
-    # Table not delivered and no vocab harmonization - harmonization should be 0
+  # Calculate harmonization using the correct formula
+  # harmonization = same_table_result_rows - initial_rows + transitions_in
+  if (table_name %in% non_harmonized_tables) {
+    # These tables don't participate in vocab harmonization
     harmonization <- 0
   } else {
-    # Normal case: calculate from expected vs initial
-    # This is the TRUE net impact: expected_final = initial_rows - quality_issues + harmonization
-    # Therefore: harmonization = expected_final - initial_rows + quality_issues
-    harmonization <- expected_final - initial_rows_calc + quality_issues
+    # The harmonization formula:
+    # - same_table_result_rows: Total result rows that stayed in this table (includes 1:N duplication)
+    # - initial_rows: Starting point before harmonization
+    # - transitions_in: Rows received from other tables
+    harmonization <- same_table_result_rows - initial_rows_calc + transitions_in
   }
 
   list(
@@ -486,6 +506,8 @@ prepare_table_data <- function(table_name, metrics, dqd_score) {
     missing_person_id_rows = missing_rows,
     referential_integrity_violations = referential_integrity_violations,
     harmonization = harmonization,
+    transitions_in = transitions_in,
+    same_table_result_rows = same_table_result_rows,
     default_date_rows = default_date_rows,
     invalid_concept_rows = invalid_concept_rows,
     missing_columns_added = length(missing_columns_list),
@@ -496,6 +518,7 @@ prepare_table_data <- function(table_name, metrics, dqd_score) {
     source_vocabularies = source_vocab,
     target_vocabularies = target_vocab,
     transitions = transitions,
+    same_table_mappings = same_table_mappings,
     harmonization_statuses = harmonization_statuses,
     dispositions = dispositions,
     counts_valid = counts_valid,

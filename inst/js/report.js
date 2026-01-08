@@ -532,80 +532,77 @@ function buildTableDrilldownContent(tableData) {
     </div>
   `;
 
-  // Vocabulary Harmonization Flow Section
-  var rowsIn = 0;
-  var rowsOut = 0;
-  var rowsStayedOnly = 0;
-  var rowsStayedAndCopied = 0;
-  var sourceRowsMovedOut = 0;
-  var hasDispositionData = false;
-
-  // Get disposition data if available (for display purposes)
-  if (tableData.dispositions && tableData.dispositions.length > 0) {
-    hasDispositionData = true;
-    tableData.dispositions.forEach(function(d) {
-      if (d.disposition === "moved to other tables") {
-        sourceRowsMovedOut = d.count;
-      } else if (d.disposition === "stayed only") {
-        rowsStayedOnly = d.count;
-      } else if (d.disposition === "stayed and copied") {
-        rowsStayedAndCopied = d.count;
-      }
-    });
-  }
-
-  // Get rows IN and OUT from transitions
-  if (tableData.transitions) {
-    tableData.transitions.forEach(function(t) {
-      if (t.target_table === tableData.name && t.source_table !== tableData.name) {
-        rowsIn += t.count;
-      }
-      if (t.source_table === tableData.name && t.target_table !== tableData.name) {
-        rowsOut += t.count;
-      }
-    });
-  }
-
-  // For harmonization calculation:
-  // Use hybrid approach: transition data (for 1:N mappings) minus "stayed and copied"
-  // - rowsOut: all result rows that went to other tables (from transitions)
-  // - rowsStayedAndCopied: source rows that also stayed in this table
-  // - Subtracting them excludes transitions from rows that did not actually decrease this table
-  var rowsMovedOut = rowsOut - rowsStayedAndCopied;
-
-  // Use the correct harmonization value from tableData (calculated in R)
-  // Then derive rowsAdded to show the breakdown: harmonization = rowsIn + rowsAdded - rowsMovedOut
+  // Use actual harmonization data calculated in R (don't recalculate in JavaScript)
+  var sameTableRows = tableData.same_table_result_rows || 0;
+  var rowsIn = tableData.transitions_in || 0;
+  var initialRows = tableData.initial_rows || 0;
   var harmonizationNet = tableData.harmonization || 0;
-  var rowsAdded = harmonizationNet - rowsIn + rowsMovedOut;
 
-  if (rowsMovedOut > 0 || rowsIn > 0 || rowsAdded > 0) {
+  // Only show harmonization flow if there was actual harmonization activity
+  if (harmonizationNet !== 0) {
     html += `
       <div class="subsection">
         <h4>Vocabulary Harmonization Flow</h4>
         <div class="info-box">
-          <p style="margin-bottom: 15px;">Row movement during vocabulary harmonization:</p>
+          <p style="margin-bottom: 15px;">Formula: (Same-table result rows - Initial rows) + Rows from other tables</p>
           <ul style="margin: 0; padding-left: 20px;">
+            <li><strong>Same-table result rows:</strong> ` + formatNumber(sameTableRows) + `</li>
+            <li><strong>Initial rows:</strong> ` + formatNumber(initialRows) + `</li>
+            <li><strong>Rows from other tables:</strong> ` + formatNumber(rowsIn) + `</li>
+          </ul>
     `;
-
-    if (rowsMovedOut > 0) {
-      html += `<li><strong>Rows to other tables:</strong> ` + formatNumber(rowsMovedOut) + `</li>`;
-    }
-    if (rowsIn > 0) {
-      html += `<li><strong>Rows from other tables:</strong> ` + formatNumber(rowsIn) + `</li>`;
-    }
-    if (rowsAdded > 0) {
-      html += `<li><strong>Rows added:</strong> ` + formatNumber(rowsAdded) + ` (from 1:N same-table mappings)</li>`;
-    }
 
     var netClass = harmonizationNet > 0 ? "harmonization-positive" : (harmonizationNet < 0 ? "harmonization-negative" : "harmonization-neutral");
     var netSign = harmonizationNet > 0 ? "+" : "";
 
     html += `
-          </ul>
           <p style="margin-top: 15px; margin-bottom: 0;"><strong>Net Impact:</strong> <span class="` + netClass + `">` + netSign + formatNumber(harmonizationNet) + ` rows</span></p>
         </div>
       </div>
     `;
+  }
+
+  // Show 1:N mapping breakdown table if available
+  if (tableData.same_table_mappings && tableData.same_table_mappings.length > 0) {
+    var mappingsWithMultiplier = tableData.same_table_mappings.filter(function(m) {
+      return m.target_multiplier > 1;
+    });
+
+    if (mappingsWithMultiplier.length > 0) {
+      html += `
+        <div class="subsection">
+          <h4>1:N Same-Table Mapping Breakdown</h4>
+          <div class="info-box">
+            <p style="margin-bottom: 15px;">When vocabulary harmonization maps one source concept to multiple target concepts in the same table:</p>
+            <table class="simple-table">
+              <thead>
+                <tr>
+                  <th>Mapping Ratio</th>
+                  <th style="text-align: right;">Source Rows</th>
+                  <th style="text-align: right;">Rows Added</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+
+      mappingsWithMultiplier.forEach(function(m) {
+        // Use pre-calculated value from R (no calculation in JS)
+        html += `
+                <tr>
+                  <td>` + m.source_multiplier + `:` + m.target_multiplier + `</td>
+                  <td style="text-align: right;">` + formatNumber(m.total_rows) + `</td>
+                  <td style="text-align: right;">` + formatNumber(m.rows_added) + `</td>
+                </tr>
+        `;
+      });
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
   }
 
   // Transitions and Harmonization

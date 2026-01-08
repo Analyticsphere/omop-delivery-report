@@ -288,6 +288,8 @@ parse_delivery_metrics <- function(delivery_data) {
     dplyr::select(table_name, status, count)
 
   # Parse vocab harmonization same-table mappings
+  # The artifact total_rows represents RESULT ROW COUNT in the harmonized data
+  # For display purposes, we calculate rows_added to show in the 1:N breakdown table
   metrics$same_table_mappings <- delivery_data %>%
     dplyr::filter(stringr::str_detect(name, "^Vocab harmonization same-table mapping:")) %>%
     dplyr::mutate(
@@ -295,24 +297,13 @@ parse_delivery_metrics <- function(delivery_data) {
       mapping = stringr::str_match(name, "Vocab harmonization same-table mapping: \\w+ - (\\d+):(\\d+)")[, 1],
       source_multiplier = as.numeric(stringr::str_match(name, "Vocab harmonization same-table mapping: \\w+ - (\\d+):(\\d+)")[, 2]),
       target_multiplier = as.numeric(stringr::str_match(name, "Vocab harmonization same-table mapping: \\w+ - (\\d+):(\\d+)")[, 3]),
-      total_rows = value_as_number
+      total_rows = value_as_number,
+      # For display: calculate how many rows were added by this specific mapping ratio
+      rows_added = total_rows * ((target_multiplier - 1) / target_multiplier)
     ) %>%
-    dplyr::select(table_name, mapping, source_multiplier, target_multiplier, total_rows)
+    dplyr::select(table_name, mapping, source_multiplier, target_multiplier, total_rows, rows_added)
 
-  # Calculate rows added from same-table mappings (ignore 1:1 mappings)
-  # The artifact value represents SOURCE rows that underwent the mapping
-  # For 1:N mapping, each source row creates N-1 additional rows
-  metrics$rows_added_by_table <- metrics$same_table_mappings %>%
-    dplyr::filter(target_multiplier > 1) %>%  # Ignore 1:1 mappings
-    dplyr::mutate(
-      # total_rows = number of source rows with this mapping ratio
-      # rows_added = source_rows * (target_multiplier - 1)
-      rows_added = total_rows * (target_multiplier - 1)
-    ) %>%
-    dplyr::group_by(table_name) %>%
-    dplyr::summarise(rows_added = sum(rows_added, na.rm = TRUE), .groups = "drop")
-
-  # Parse vocab harmonization row dispositions
+  # Parse vocab harmonization row dispositions (kept for informational purposes)
   metrics$row_dispositions <- delivery_data %>%
     dplyr::filter(stringr::str_detect(name, "^Vocab harmonization row disposition:")) %>%
     dplyr::mutate(
@@ -321,25 +312,6 @@ parse_delivery_metrics <- function(delivery_data) {
       count = value_as_number
     ) %>%
     dplyr::select(table_name, disposition, count)
-
-  # Correct rows_added by accounting for "stayed and copied" rows
-  # These rows are incorrectly counted in same-table mappings when they include cross-table targets
-  # For each "stayed and copied" row, the artifact multiplier includes targets in other tables,
-  # so we subtract those to get true same-table additions
-  metrics$rows_added_by_table <- metrics$rows_added_by_table %>%
-    dplyr::left_join(
-      metrics$row_dispositions %>%
-        dplyr::filter(disposition == "stayed and copied") %>%
-        dplyr::select(table_name, stayed_and_copied = count),
-      by = "table_name"
-    ) %>%
-    dplyr::mutate(
-      stayed_and_copied = tidyr::replace_na(stayed_and_copied, 0),
-      # For "stayed and copied" rows, subtract the cross-table targets that were incorrectly
-      # included in the same-table mapping artifact
-      rows_added = rows_added - stayed_and_copied
-    ) %>%
-    dplyr::select(table_name, rows_added)
 
   # Parse missing person_id metrics
   metrics$missing_person_id <- delivery_data %>%
