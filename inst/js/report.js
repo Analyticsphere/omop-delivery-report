@@ -383,7 +383,7 @@ function buildTableDrilldownContent(tableData) {
     <div class="metric-card ` + refIntegrityClass + `">
       <div class="metric-label">Referential Integrity Violations</div>
       <div class="metric-value">` + refIntegrityDisplay + `</div>
-      <div class="metric-sublabel">person_id not found in person table</div>
+      <div class="metric-sublabel">Rows with person_id not in person table</div>
     </div>
   `;
 
