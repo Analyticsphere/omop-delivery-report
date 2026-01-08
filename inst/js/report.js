@@ -533,22 +533,46 @@ function buildTableDrilldownContent(tableData) {
   `;
 
   // Use actual harmonization data calculated in R (don't recalculate in JavaScript)
-  var sameTableRows = tableData.same_table_result_rows || 0;
   var rowsIn = tableData.transitions_in || 0;
-  var initialRows = tableData.initial_rows || 0;
   var harmonizationNet = tableData.harmonization || 0;
+
+  // Calculate rows sent to other tables from transitions data
+  var rowsOut = 0;
+  if (tableData.transitions && tableData.transitions.length > 0) {
+    tableData.transitions.forEach(function(t) {
+      if (t.source_table === tableData.name && t.target_table !== tableData.name) {
+        rowsOut += t.count;
+      }
+    });
+  }
+
+  // Calculate total rows added from 1:N same-table mappings
+  var rowsAddedFromMappings = 0;
+  if (tableData.same_table_mappings && tableData.same_table_mappings.length > 0) {
+    tableData.same_table_mappings.forEach(function(m) {
+      rowsAddedFromMappings += m.rows_added;
+    });
+  }
 
   // Only show harmonization flow if there was actual harmonization activity
   if (harmonizationNet !== 0) {
+    // Format rows out (red with minus sign if > 0)
+    var rowsOutFormatted = rowsOut > 0 ? '<span style="color: #ef4444;">-' + formatNumber(rowsOut) + '</span>' : formatNumber(rowsOut);
+
+    // Format rows in (green with plus sign if > 0)
+    var rowsInFormatted = rowsIn > 0 ? '<span style="color: #10b981;">+' + formatNumber(rowsIn) + '</span>' : formatNumber(rowsIn);
+
+    // Format rows added from mappings (green with plus sign if > 0)
+    var rowsAddedFormatted = rowsAddedFromMappings > 0 ? '<span style="color: #10b981;">+' + formatNumber(rowsAddedFromMappings) + '</span>' : formatNumber(rowsAddedFromMappings);
+
     html += `
       <div class="subsection">
         <h4>Vocabulary Harmonization Flow</h4>
         <div class="info-box">
-          <p style="margin-bottom: 15px;">Formula: (Same-table result rows - Initial rows) + Rows from other tables</p>
           <ul style="margin: 0; padding-left: 20px;">
-            <li><strong>Same-table result rows:</strong> ` + formatNumber(sameTableRows) + `</li>
-            <li><strong>Initial rows:</strong> ` + formatNumber(initialRows) + `</li>
-            <li><strong>Rows from other tables:</strong> ` + formatNumber(rowsIn) + `</li>
+            <li>Rows moved to other tables: ` + rowsOutFormatted + `</li>
+            <li>Rows received from other tables: ` + rowsInFormatted + `</li>
+            <li>Rows added from 1:N mappings: ` + rowsAddedFormatted + `</li>
           </ul>
     `;
 
@@ -562,48 +586,6 @@ function buildTableDrilldownContent(tableData) {
     `;
   }
 
-  // Show 1:N mapping breakdown table if available
-  if (tableData.same_table_mappings && tableData.same_table_mappings.length > 0) {
-    var mappingsWithMultiplier = tableData.same_table_mappings.filter(function(m) {
-      return m.target_multiplier > 1;
-    });
-
-    if (mappingsWithMultiplier.length > 0) {
-      html += `
-        <div class="subsection">
-          <h4>1:N Same-Table Mapping Breakdown</h4>
-          <div class="info-box">
-            <p style="margin-bottom: 15px;">When vocabulary harmonization maps one source concept to multiple target concepts in the same table:</p>
-            <table class="simple-table">
-              <thead>
-                <tr>
-                  <th>Mapping Ratio</th>
-                  <th style="text-align: right;">Source Rows</th>
-                  <th style="text-align: right;">Rows Added</th>
-                </tr>
-              </thead>
-              <tbody>
-      `;
-
-      mappingsWithMultiplier.forEach(function(m) {
-        // Use pre-calculated value from R (no calculation in JS)
-        html += `
-                <tr>
-                  <td>` + m.source_multiplier + `:` + m.target_multiplier + `</td>
-                  <td style="text-align: right;">` + formatNumber(m.total_rows) + `</td>
-                  <td style="text-align: right;">` + formatNumber(m.rows_added) + `</td>
-                </tr>
-        `;
-      });
-
-      html += `
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-    }
-  }
 
   // Transitions and Harmonization
   if (tableData.transitions && tableData.transitions.length > 0) {
