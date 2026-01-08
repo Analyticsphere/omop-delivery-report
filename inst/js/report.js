@@ -1760,7 +1760,8 @@ function drawTimeSeriesChart() {
     data.forEach(function(d) {
       const x = xScale(d.year);
       const y = yScale(d.count);
-      html += '<circle cx="' + x + '" cy="' + y + '" r="4" fill="' + color + '" stroke="white" stroke-width="1.5" style="cursor: pointer;">';
+      const tooltipText = table + ' (' + d.year + '): ' + formatNumber(d.count);
+      html += '<circle cx="' + x + '" cy="' + y + '" r="4" fill="' + color + '" stroke="white" stroke-width="1.5" style="cursor: pointer;" class="time-series-point" data-tooltip="' + tooltipText + '" onmouseenter="showTimeSeriesTooltip(event, \'' + tooltipText.replace(/'/g, "\\'") + '\')" onmouseleave="hideTimeSeriesTooltip()">';
       html += '<title>' + table + ' (' + d.year + '): ' + formatNumber(d.count) + '</title>';
       html += '</circle>';
     });
@@ -1979,7 +1980,8 @@ function drawTableDrilldownTimeSeries() {
   tableData.forEach(function(d) {
     const x = xScale(d.year);
     const y = yScale(d.count);
-    html += '<circle cx="' + x + '" cy="' + y + '" r="5" fill="' + color + '" stroke="white" stroke-width="2" style="cursor: pointer;">';
+    const tooltipText = currentDrilldownTable + ' (' + d.year + '): ' + formatNumber(d.count);
+    html += '<circle cx="' + x + '" cy="' + y + '" r="5" fill="' + color + '" stroke="white" stroke-width="2" style="cursor: pointer;" class="time-series-point" onmouseenter="showTimeSeriesTooltip(event, \'' + tooltipText.replace(/'/g, "\\'") + '\')" onmouseleave="hideTimeSeriesTooltip()">';
     html += '<title>' + currentDrilldownTable + ' (' + d.year + '): ' + formatNumber(d.count) + '</title>';
     html += '</circle>';
   });
@@ -1987,6 +1989,46 @@ function drawTableDrilldownTimeSeries() {
   html += '</svg>';
 
   container.innerHTML = html;
+}
+
+// ============================================================================
+// CUSTOM TOOLTIP FOR TIME SERIES
+// ============================================================================
+
+function showTimeSeriesTooltip(event, text) {
+  // Remove any existing tooltip
+  hideTimeSeriesTooltip();
+
+  // Create tooltip element
+  const tooltip = document.createElement('div');
+  tooltip.id = 'time-series-custom-tooltip';
+  tooltip.style.position = 'absolute';
+  tooltip.style.background = 'rgba(15, 23, 42, 0.95)';
+  tooltip.style.color = 'white';
+  tooltip.style.padding = '8px 12px';
+  tooltip.style.borderRadius = '6px';
+  tooltip.style.fontSize = '13px';
+  tooltip.style.fontWeight = '500';
+  tooltip.style.pointerEvents = 'none';
+  tooltip.style.zIndex = '10000';
+  tooltip.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+  tooltip.style.whiteSpace = 'nowrap';
+  tooltip.textContent = text;
+
+  document.body.appendChild(tooltip);
+
+  // Position tooltip near cursor
+  const x = event.pageX;
+  const y = event.pageY;
+  tooltip.style.left = (x + 10) + 'px';
+  tooltip.style.top = (y - 35) + 'px';
+}
+
+function hideTimeSeriesTooltip() {
+  const tooltip = document.getElementById('time-series-custom-tooltip');
+  if (tooltip) {
+    tooltip.remove();
+  }
 }
 
 // ============================================================================
