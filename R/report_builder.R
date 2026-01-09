@@ -43,11 +43,85 @@ build_complete_html_report <- function(metrics, dqd_data, dqd_scores, table_grou
 
   dqd_grid_html <- build_dqd_grid_section(dqd_scores, has_dqd_data)
 
-  time_series_html <- build_time_series_section(metrics, has_delivery_data)
+  # Time series section - use template
+  time_series_html <- if (!has_delivery_data) {
+    render_template("sections/data-unavailable", list(
+      section_id = "time-series",
+      section_title = "Data Timeline",
+      data_type = "Delivery"
+    ))
+  } else {
+    ts_data <- prepare_time_series_data(metrics)
+    if (is.null(ts_data)) {
+      render_template("sections/time-series-empty")
+    } else {
+      render_template("sections/time-series", ts_data)
+    }
+  }
 
-  delivery_report_html <- build_delivery_report_section(metrics, table_groups, group_dqd_scores, has_delivery_data, has_dqd_data)
+  # Delivery report section - use templates
+  delivery_report_html <- if (!has_delivery_data) {
+    render_template("sections/data-unavailable", list(
+      section_id = "delivery-report",
+      section_title = "Table Delivery Summary",
+      data_type = "Delivery"
+    ))
+  } else {
+    dr_data <- prepare_delivery_report_data(metrics, table_groups, group_dqd_scores, num_participants)
 
-  vocab_harm_html <- build_vocabulary_harmonization_section(metrics, has_delivery_data)
+    # Render dropdown options
+    dropdown_options_html <- render_component_list("components/delivery-report-dropdown-option", dr_data$dropdown_options_data)
+
+    # Render each group
+    group_contents_html <- paste(sapply(dr_data$group_contents_data, function(group_data) {
+      # Render table rows for this group
+      table_rows_html <- render_component_list("components/delivery-report-table-row", group_data$table_rows_data)
+
+      # Render the group with its rows
+      render_template("components/delivery-report-group", c(
+        group_data[c("group_name", "group_id", "display_style", "dqd_note", "type_concept_subheader")],
+        list(table_rows = table_rows_html)
+      ))
+    }), collapse = "\n")
+
+    # Render the main section
+    render_template("sections/delivery-report", list(
+      dropdown_options = dropdown_options_html,
+      group_contents = group_contents_html
+    ))
+  }
+
+  # Vocabulary harmonization section - use template
+  vocab_harm_html <- if (!has_delivery_data) {
+    render_template("sections/data-unavailable", list(
+      section_id = "vocab-harmonization",
+      section_title = "Vocabulary Harmonization",
+      data_type = "Delivery"
+    ))
+  } else {
+    vh_data <- prepare_vocab_harmonization_data(metrics)
+
+    # Render vocabulary rows
+    source_vocab_rows_html <- if (length(vh_data$source_vocab_rows) > 0) {
+      render_component_list("components/vocab-row", vh_data$source_vocab_rows)
+    } else {
+      '<tr><td colspan="2">No vocabulary data available</td></tr>'
+    }
+
+    target_vocab_rows_html <- if (length(vh_data$target_vocab_rows) > 0) {
+      render_component_list("components/vocab-row", vh_data$target_vocab_rows)
+    } else {
+      '<tr><td colspan="2">No vocabulary data available</td></tr>'
+    }
+
+    # Render the section
+    render_template("sections/vocabulary-harmonization", list(
+      delivered_vocab_version = vh_data$delivered_vocab_version,
+      standardized_vocab_version = vh_data$standardized_vocab_version,
+      source_vocab_rows = source_vocab_rows_html,
+      target_vocab_rows = target_vocab_rows_html
+    ))
+  }
 
   drilldown_html <- render_template("sections/drilldown")
 
@@ -316,5 +390,6 @@ generate_dqd_grid_rows <- function(grid) {
   paste(rows, collapse = "\n")
 }
 
-# Note: Time series, delivery report, and vocab harmonization sections
-# use html_builders.R functions directly for building complex HTML structures.
+# Note: HTML sections use templates from inst/templates/.
+# Complex sections (time series, delivery report, vocab harmonization) use
+# component-based rendering with data preparation functions in data_transformers.R.
