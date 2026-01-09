@@ -43,13 +43,13 @@ default_config <- function() {
       ),
       tables = list(
         condition_occurrence = "#ef4444",  # Red
-        device_exposure = "#8b5cf6",       # Purple
+        device_exposure = "#ec4899",       # Pink
         drug_exposure = "#3b82f6",         # Blue
-        measurement = "#f59e0b",           # Amber/Gold
+        measurement = "#ff8d02",           # Orange
         note = "#6366f1",                  # Indigo
-        observation = "#f97316",           # Orange
+        observation = "#8b5cf6",           # Purple
         procedure_occurrence = "#84cc16",  # Lime Green
-        specimen = "#ec4899",              # Pink
+        specimen = "#96929f",              # Gray
         visit_occurrence = "#eab308"       # Yellow
       ),
       dqd_scores = list(
