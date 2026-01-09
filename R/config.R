@@ -41,6 +41,17 @@ default_config <- function() {
         Unlabeled = "#868686",
         Other = "#7AA6DC"
       ),
+      tables = list(
+        condition_occurrence = "#ef4444",  # Red
+        device_exposure = "#8b5cf6",       # Purple
+        drug_exposure = "#3b82f6",         # Blue
+        measurement = "#f59e0b",           # Amber/Gold
+        note = "#6366f1",                  # Indigo
+        observation = "#f97316",           # Orange
+        procedure_occurrence = "#84cc16",  # Lime Green
+        specimen = "#ec4899",              # Pink
+        visit_occurrence = "#eab308"       # Yellow
+      ),
       dqd_scores = list(
         good_threshold = 95,    # >= 95% is "good"
         fair_threshold = 85,    # >= 85% is "fair", below is "poor"
@@ -156,6 +167,14 @@ get_invalid_concepts_threshold <- function(config = default_config()) {
 #' @return Named character vector of hex colors
 get_type_concept_colors <- function(config = default_config()) {
   unlist(config$colors$type_concepts)
+}
+
+#' Get table color mapping
+#'
+#' @param config Configuration list from merge_config()
+#' @return Named character vector of hex colors
+get_table_colors <- function(config = default_config()) {
+  unlist(config$colors$tables)
 }
 
 #' Get canonical order for type concept groups

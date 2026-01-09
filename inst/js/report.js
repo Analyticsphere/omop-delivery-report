@@ -836,18 +836,8 @@ function buildSankeyDiagram(transitions) {
     return "<p>No transitions to display</p>";
   }
 
-  // Define consistent color palette for clinical tables
-  const tableColors = {
-    "condition_occurrence": "#ef4444",  // Red
-    "device_exposure": "#8b5cf6",       // Purple
-    "drug_exposure": "#3b82f6",         // Blue 
-    "measurement": "#14b8a6",           // Teal
-    "note": "#6366f1",                  // Indigo/Purple-blue
-    "observation": "#f97316",           // Orange
-    "procedure_occurrence": "#84cc16",  // Lime Green
-    "specimen": "#ec4899",              // Pink
-    "visit_occurrence": "#eab308"       // Yellow
-  };
+  // Use table colors from configuration
+  const tableColors = REPORT_DATA.table_colors || {};
 
   // Get unique source and target tables
   const sourceSet = new Set();
@@ -1510,18 +1500,8 @@ let currentDrilldownTable = null;
 let drilldownCustomStartYear = 1970;
 let drilldownCustomEndYear = 2025;
 
-// Table colors (must match harmonization Sankey colors)
-const TIME_SERIES_COLORS = {
-  "condition_occurrence": "#ef4444",  // Red
-  "device_exposure": "#8b5cf6",       // Purple
-  "drug_exposure": "#3b82f6",         // Blue
-  "measurement": "#14b8a6",           // Teal
-  "note": "#6366f1",                  // Indigo
-  "observation": "#f97316",           // Orange
-  "procedure_occurrence": "#84cc16",  // Lime Green
-  "specimen": "#ec4899",              // Pink
-  "visit_occurrence": "#eab308"       // Yellow
-};
+// Use table colors from configuration (set when REPORT_DATA loads)
+const TIME_SERIES_COLORS = REPORT_DATA.table_colors || {};
 
 function switchTimeSeriesView(view) {
   console.log("Switching data timeline view to:", view);

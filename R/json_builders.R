@@ -142,6 +142,7 @@ build_report_data_json <- function(metrics, dqd_data, table_groups, group_dqd_sc
   report_data <- list(
     groups = groups_data,
     type_colors = as.list(get_type_concept_colors()),
+    table_colors = as.list(get_table_colors()),
     type_group_order = get_type_concept_group_order(),
     overall_transitions = overall_transitions,
     overall_transition_stats = list(
