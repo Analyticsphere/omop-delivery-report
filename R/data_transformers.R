@@ -1062,3 +1062,101 @@ prepare_delivery_table_row <- function(table_name, metrics, num_participants) {
     row_per_patient = row_per_patient
   )
 }
+
+#' Prepare overview section data
+#'
+#' Prepares all variables needed for the overview section template.
+#'
+#' @param metrics List of metrics
+#' @param dqd_scores List with DQD scores
+#' @param num_participants Integer participant count
+#' @param total_rows_removed Integer rows removed count
+#' @param has_delivery_data Logical
+#' @param has_dqd_data Logical
+#' @return List of template variables
+prepare_overview_data <- function(metrics, dqd_scores, num_participants, total_rows_removed, has_delivery_data, has_dqd_data) {
+  # Format displays
+  tables_delivered <- if (has_delivery_data) as.character(nrow(metrics$valid_tables)) else "N/A"
+  participants_display <- if (has_delivery_data) format_number(num_participants) else "N/A"
+  missing_person_display <- if (has_delivery_data) as.character(metrics$missing_person_id_count) else "N/A"
+  rows_removed_display <- if (has_delivery_data) format_number(total_rows_removed) else "N/A"
+
+  # Warning classes and icons
+  if (has_delivery_data) {
+    missing_warning <- if (metrics$missing_person_id_count > 0) " warning" else " success"
+    missing_icon <- if (metrics$missing_person_id_count > 0) '<span class="warning-icon">⚠️</span>' else '<span class="success-icon">✓</span>'
+    rows_warning <- if (total_rows_removed > 0) " warning" else " success"
+    rows_icon <- if (total_rows_removed > 0) '<span class="warning-icon">⚠️</span>' else '<span class="success-icon">✓</span>'
+    person_word <- if (metrics$missing_person_id_count == 1) "Person" else "Persons"
+  } else {
+    missing_warning <- " neutral"
+    missing_icon <- ""
+    rows_warning <- " neutral"
+    rows_icon <- ""
+    person_word <- "Persons"
+  }
+
+  # DQD score
+  dqd_class <- get_dqd_score_class(dqd_scores$overall)
+  dqd_score_display <- if (is.na(dqd_scores$overall)) "N/A" else paste0(dqd_scores$overall, "%")
+
+  list(
+    tables_delivered = tables_delivered,
+    participants_display = participants_display,
+    dqd_class = dqd_class,
+    dqd_score_display = dqd_score_display,
+    missing_warning = missing_warning,
+    missing_icon = missing_icon,
+    missing_person_display = missing_person_display,
+    person_word = person_word,
+    rows_warning = rows_warning,
+    rows_icon = rows_icon,
+    rows_removed_display = rows_removed_display
+  )
+}
+
+#' Prepare DQD grid rows data
+#'
+#' Prepares data for DQD grid table rows.
+#'
+#' @param grid Data frame with DQD grid data
+#' @return List of row data for rendering
+prepare_dqd_grid_rows <- function(grid) {
+  if (nrow(grid) == 0) {
+    return(list())
+  }
+
+  # Reshape for display
+  grid_wide <- grid |>
+    tidyr::pivot_wider(names_from = context, values_from = c(Pass, Fail, Total, `% Pass`))
+
+  categories <- c("Plausibility", "Conformance", "Completeness", "Total")
+
+  rows_data <- lapply(categories, function(cat_name) {
+    row_data <- grid_wide |> dplyr::filter(category == cat_name)
+
+    if (nrow(row_data) == 0) return(NULL)
+
+    row_class <- if (cat_name == "Total") ' class="total-row"' else ''
+
+    list(
+      row_class = row_class,
+      category = cat_name,
+      pass_verification = ifelse(is.na(row_data$Pass_Verification), 0, row_data$Pass_Verification),
+      fail_verification = ifelse(is.na(row_data$Fail_Verification), 0, row_data$Fail_Verification),
+      total_verification = ifelse(is.na(row_data$Total_Verification), 0, row_data$Total_Verification),
+      percent_pass_verification = ifelse(is.na(row_data$`% Pass_Verification`), "0%", paste0(row_data$`% Pass_Verification`, "%")),
+      pass_validation = ifelse(is.na(row_data$Pass_Validation), 0, row_data$Pass_Validation),
+      fail_validation = ifelse(is.na(row_data$Fail_Validation), 0, row_data$Fail_Validation),
+      total_validation = ifelse(is.na(row_data$Total_Validation), 0, row_data$Total_Validation),
+      percent_pass_validation = ifelse(is.na(row_data$`% Pass_Validation`), "0%", paste0(row_data$`% Pass_Validation`, "%")),
+      pass_total = ifelse(is.na(row_data$Pass_Total), 0, row_data$Pass_Total),
+      fail_total = ifelse(is.na(row_data$Fail_Total), 0, row_data$Fail_Total),
+      total_total = ifelse(is.na(row_data$Total_Total), 0, row_data$Total_Total),
+      percent_pass_total = paste0(ifelse(is.na(row_data$`% Pass_Total`), 0, row_data$`% Pass_Total`), "%")
+    )
+  })
+
+  # Filter out NULL entries
+  Filter(Negate(is.null), rows_data)
+}
