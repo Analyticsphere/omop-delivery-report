@@ -10,6 +10,5 @@ get_full_css_styles()
 Character string containing the full CSS code
 }
 \description{
-Reads CSS from external file rather than embedding as a string.
-This allows proper syntax highlighting and easier maintenance.
+Reads CSS from external file for syntax highlighting and external editing.
 }

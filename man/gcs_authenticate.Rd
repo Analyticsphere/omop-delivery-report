@@ -10,11 +10,6 @@ gcs_authenticate()
 Logical TRUE if authentication succeeded, FALSE otherwise
 }
 \description{
-Uses automatic authentication that works in multiple environments:
-- Cloud Run: Uses service account JSON file at /secrets/service-account.json
-- Local: Uses GOOGLE_APPLICATION_CREDENTIALS environment variable or default credentials
-}
-\details{
-The explicit JSON file path is used because googleCloudStorageR doesn't reliably
-auto-detect Cloud Run metadata server credentials.
+Authenticates using Cloud Run service account at /secrets/service-account.json
+or local default credentials.
 }

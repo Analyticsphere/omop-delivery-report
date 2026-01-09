@@ -17,4 +17,5 @@ List containing parsed metrics: valid_columns, invalid_columns, valid_tables,
 \description{
 Extracts and organizes metrics from delivery_report.csv into categorized tibbles.
 Parses table counts, type concepts, vocabularies, harmonization data, and metadata.
+Uses string pattern matching to identify metrics
 }

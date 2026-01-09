@@ -430,3 +430,49 @@ create_empty_metrics <- function() {
     time_series = data.frame(year = integer(), table_name = character(), count = integer())
   )
 }
+
+#' Ensure all type concept groups are present
+#'
+#' Fills in missing type concept groups with zero counts.
+#' This ensures consistent display even when some groups have no data.
+#'
+#' @param type_concept_data Data frame with type_group and count columns
+#' @param config Configuration list (default: default_config())
+#' @return Data frame with all type groups present
+ensure_all_type_groups <- function(type_concept_data, config = default_config()) {
+  all_groups <- get_type_concept_group_order(config)
+
+  # Create a complete template with all groups
+  complete_groups <- tibble::tibble(
+    type_group = all_groups,
+    count = 0
+  )
+
+  # Merge with actual data, keeping all groups
+  result <- complete_groups %>%
+    dplyr::left_join(
+      type_concept_data %>% dplyr::select(type_group, count),
+      by = "type_group",
+      suffix = c("_template", "_actual")
+    ) %>%
+    dplyr::mutate(
+      count = dplyr::coalesce(count_actual, count_template)
+    ) %>%
+    dplyr::select(-count_template, -count_actual)
+
+  # If original data had additional columns, merge them back
+  extra_cols <- setdiff(names(type_concept_data), c("type_group", "count"))
+  if (length(extra_cols) > 0) {
+    result <- result %>%
+      dplyr::left_join(
+        type_concept_data %>% dplyr::select(type_group, dplyr::all_of(extra_cols)),
+        by = "type_group"
+      )
+  }
+
+  # Ensure proper ordering
+  result %>%
+    dplyr::mutate(type_group = factor(type_group, levels = all_groups)) %>%
+    dplyr::arrange(type_group) %>%
+    dplyr::mutate(type_group = as.character(type_group))
+}

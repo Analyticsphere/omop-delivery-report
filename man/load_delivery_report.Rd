@@ -14,6 +14,6 @@ Tibble with columns: name, value_as_string, value_as_number, or NULL if file mis
 }
 \description{
 Reads delivery_report.csv from local filesystem or GCS.
-Returns NULL if file is missing (with warning) to allow graceful degradation.
+Returns NULL if file is missing (with warning).
 Supports both local paths and GCS URIs (gs://bucket/path).
 }

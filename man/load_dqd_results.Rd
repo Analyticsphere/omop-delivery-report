@@ -14,6 +14,6 @@ Tibble with DQD check results including checkId, failed, passed, category, cdmTa
 }
 \description{
 Reads Data Quality Dashboard results CSV from local filesystem or GCS.
-Returns NULL if file is missing (with warning) to allow graceful degradation.
+Returns NULL if file is missing (with warning).
 Supports both local paths and GCS URIs (gs://bucket/path).
 }
