@@ -838,15 +838,15 @@ function buildSankeyDiagram(transitions) {
 
   // Define consistent color palette for clinical tables
   const tableColors = {
-    "condition_occurrence": "#ef4444",  // Red - conditions/diseases
-    "device_exposure": "#8b5cf6",       // Purple - medical devices
-    "drug_exposure": "#3b82f6",         // Blue - medications
-    "measurement": "#14b8a6",           // Teal - lab results/vitals
-    "note": "#6366f1",                  // Indigo/Purple-blue - documentation
-    "observation": "#f97316",           // Orange - observations
-    "procedure_occurrence": "#10b981",  // Green - procedures/treatments
-    "specimen": "#ec4899",              // Pink - biological samples
-    "visit_occurrence": "#eab308"       // Yellow - visits/encounters
+    "condition_occurrence": "#ef4444",  // Red
+    "device_exposure": "#8b5cf6",       // Purple
+    "drug_exposure": "#3b82f6",         // Blue 
+    "measurement": "#14b8a6",           // Teal
+    "note": "#6366f1",                  // Indigo/Purple-blue
+    "observation": "#f97316",           // Orange
+    "procedure_occurrence": "#84cc16",  // Lime Green
+    "specimen": "#ec4899",              // Pink
+    "visit_occurrence": "#eab308"       // Yellow
   };
 
   // Get unique source and target tables
@@ -1518,7 +1518,7 @@ const TIME_SERIES_COLORS = {
   "measurement": "#14b8a6",           // Teal
   "note": "#6366f1",                  // Indigo
   "observation": "#f97316",           // Orange
-  "procedure_occurrence": "#10b981",  // Green
+  "procedure_occurrence": "#84cc16",  // Lime Green
   "specimen": "#ec4899",              // Pink
   "visit_occurrence": "#eab308"       // Yellow
 };
