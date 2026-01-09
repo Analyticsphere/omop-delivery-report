@@ -547,12 +547,12 @@ function buildTableDrilldownContent(tableData) {
   }
 
   // Calculate total rows added from 1:N same-table mappings
-  var rowsAddedFromMappings = 0;
-  if (tableData.same_table_mappings && tableData.same_table_mappings.length > 0) {
-    tableData.same_table_mappings.forEach(function(m) {
-      rowsAddedFromMappings += m.rows_added;
-    });
-  }
+  // The R formula is: harmonization = same_table_result_rows - initial_rows + transitions_in
+  // We can break this down as: harmonization = (rows_added_from_1N - rows_moved_out) + transitions_in
+  // Therefore: rows_added_from_1N = (same_table_result_rows - initial_rows) + rows_moved_out
+  var same_table_result_rows = tableData.same_table_result_rows || 0;
+  var initial_rows = tableData.initial_rows || 0;
+  var rowsAddedFromMappings = (same_table_result_rows - initial_rows) + rowsOut;
 
   // Only show harmonization flow if there was actual harmonization activity
   if (harmonizationNet !== 0) {
