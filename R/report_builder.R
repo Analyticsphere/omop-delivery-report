@@ -180,3 +180,35 @@ build_complete_html_report <- function(metrics, dqd_data, dqd_scores, table_grou
 
   return(html)
 }
+
+# ==============================================================================
+# JSON Serialization
+# ==============================================================================
+
+#' Build complete JSON data object for JavaScript
+#'
+#' Serializes pre-calculated report data to JSON format for JavaScript consumption.
+#' This is a pure serialization function - all business logic should be done
+#' in prepare_report_data() before calling this function.
+#'
+#' @param report_data List of pre-calculated report data from prepare_report_data()
+#' @return Character JSON string
+build_report_data_json <- function(report_data) {
+
+  # Add configuration data (colors, ordering)
+  report_data$type_colors <- as.list(get_type_concept_colors())
+  report_data$table_colors <- as.list(get_table_colors())
+  report_data$type_group_order <- get_type_concept_group_order()
+
+  # Serialize to JSON
+  json_string <- jsonlite::toJSON(
+    report_data,
+    auto_unbox = TRUE,
+    dataframe = "rows",
+    na = "null",
+    null = "null",
+    pretty = FALSE
+  )
+
+  return(as.character(json_string))
+}
