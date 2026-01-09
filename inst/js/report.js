@@ -286,11 +286,11 @@ function buildTableDrilldownContent(tableData) {
   // Display warnings if any exist
   if (qualityWarnings.length > 0) {
     html += `
-      <div class="info-box" style="margin-bottom: 20px; background-color: #fef3c7; border-left: 4px solid #f59e0b;">
-        <h5 style="margin: 0 0 10px 0; color: #92400e; font-size: 1.1em;">Data Quality Alerts</h5>
+      <div class="info-box drilldown-alert-box">
+        <h5 class="drilldown-alert-title">Data Quality Alerts</h5>
     `;
     qualityWarnings.forEach(function(warning) {
-      html += `<p style="margin: 5px 0; color: #92400e; font-size: 0.9em;">` + warning + `</p>`;
+      html += `<p class="drilldown-alert-text">` + warning + `</p>`;
     });
     html += `
       </div>
@@ -333,7 +333,7 @@ function buildTableDrilldownContent(tableData) {
       <div class="metric-card">
         <div class="metric-label">DQD Score</div>
         <div class="text-center mt-20">
-          <div class="dqd-score ` + dqdClass + `" style="min-width: 100px; height: 100px; font-size: 2em;">
+          <div class="dqd-score drilldown-dqd-score ` + dqdClass + `">
             ` + dqdDisplay + `
           </div>
         </div>
@@ -365,7 +365,7 @@ function buildTableDrilldownContent(tableData) {
   // Rows Without Connect ID Card
   var missingClass = tableData.final_rows === 0 ? "neutral" : (tableData.missing_person_id_rows > 0 ? "warning" : "success");
   var missingPercent = (tableData.missing_person_id_percent || 0).toFixed(1);
-  var missingDisplay = tableData.final_rows === 0 ? "N/A" : (formatNumber(tableData.missing_person_id_rows) + ` <span style="font-size: 0.6em; color: #666;">(` + missingPercent + `%)</span>`);
+  var missingDisplay = tableData.final_rows === 0 ? "N/A" : (formatNumber(tableData.missing_person_id_rows) + ` <span class="percentage-display">(` + missingPercent + `%)</span>`);
   html += `
     <div class="metric-card ` + missingClass + `">
       <div class="metric-label">Rows Without Connect ID</div>
@@ -378,7 +378,7 @@ function buildTableDrilldownContent(tableData) {
   var refIntegrityViolations = tableData.referential_integrity_violations || 0;
   var refIntegrityClass = tableData.final_rows === 0 ? "neutral" : (refIntegrityViolations > 0 ? "warning" : "success");
   var refIntegrityPercent = (tableData.referential_integrity_percent || 0).toFixed(1);
-  var refIntegrityDisplay = tableData.final_rows === 0 ? "N/A" : (formatNumber(refIntegrityViolations) + ` <span style="font-size: 0.6em; color: #666;">(` + refIntegrityPercent + `%)</span>`);
+  var refIntegrityDisplay = tableData.final_rows === 0 ? "N/A" : (formatNumber(refIntegrityViolations) + ` <span class="percentage-display">(` + refIntegrityPercent + `%)</span>`);
   html += `
     <div class="metric-card ` + refIntegrityClass + `">
       <div class="metric-label">Referential Integrity Violations</div>
@@ -390,7 +390,7 @@ function buildTableDrilldownContent(tableData) {
   // Invalid Rows Card
   var invalidClass = tableData.final_rows === 0 ? "neutral" : (tableData.invalid_rows > 0 ? "warning" : "success");
   var invalidPercent = (tableData.invalid_rows_percent || 0).toFixed(1);
-  var invalidDisplay = tableData.final_rows === 0 ? "N/A" : (formatNumber(tableData.invalid_rows) + ` <span style="font-size: 0.6em; color: #666;">(` + invalidPercent + `%)</span>`);
+  var invalidDisplay = tableData.final_rows === 0 ? "N/A" : (formatNumber(tableData.invalid_rows) + ` <span class="percentage-display">(` + invalidPercent + `%)</span>`);
   html += `
     <div class="metric-card ` + invalidClass + `">
       <div class="metric-label">Invalid Rows</div>
@@ -402,7 +402,7 @@ function buildTableDrilldownContent(tableData) {
   // Row 2: Rows with Invalid Concepts | Rows with Default Dates
   // Invalid Concepts Card (variables already declared at top for warnings)
   var invalidConceptClass = tableData.final_rows === 0 ? "neutral" : (invalidConceptRows > 0 ? "warning" : "success");
-  var invalidConceptDisplay = tableData.final_rows === 0 ? "N/A" : (formatNumber(invalidConceptRows) + ` <span style="font-size: 0.6em; color: #666;">(` + invalidConceptPercent + `%)</span>`);
+  var invalidConceptDisplay = tableData.final_rows === 0 ? "N/A" : (formatNumber(invalidConceptRows) + ` <span class="percentage-display">(` + invalidConceptPercent + `%)</span>`);
   html += `
     <div class="metric-card ` + invalidConceptClass + `">
       <div class="metric-label">Rows with Invalid Concepts</div>
@@ -422,7 +422,7 @@ function buildTableDrilldownContent(tableData) {
     defaultDateClass = "warning";
   }
 
-  var defaultDateDisplay = tableData.final_rows === 0 ? "N/A" : (formatNumber(defaultDateRows) + ` <span style="font-size: 0.6em; color: #666;">(` + defaultDatePercent + `%)</span>`);
+  var defaultDateDisplay = tableData.final_rows === 0 ? "N/A" : (formatNumber(defaultDateRows) + ` <span class="percentage-display">(` + defaultDatePercent + `%)</span>`);
 
   html += `
     <div class="metric-card ` + defaultDateClass + `">
@@ -437,7 +437,7 @@ function buildTableDrilldownContent(tableData) {
   // Extra Columns Removed - Always show for delivered tables
   if (tableData.delivered) {
     html += `
-      <div style="margin-top: 20px;">
+      <div class="drilldown-section-spacing">
         <h5 style="margin: 0 0 10px 0;">Extra Columns Removed</h5>
         <div class="info-box">
     `;
@@ -464,7 +464,7 @@ function buildTableDrilldownContent(tableData) {
   // Missing Columns Added - Always show for delivered tables
   if (tableData.delivered) {
     html += `
-      <div style="margin-top: 20px;">
+      <div class="drilldown-section-spacing">
         <h5 style="margin: 0 0 10px 0;">Missing Columns Added</h5>
         <div class="info-box">
     `;
@@ -512,20 +512,20 @@ function buildTableDrilldownContent(tableData) {
       <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; text-align: center;">${tableData.name}</div>
 
       <div style="margin-top: 16px;">
-        <div class="toggle-buttons" style="margin-bottom: 16px;">
-          <button class="toggle-button active" id="drilldown-time-series-recent" onclick="switchTableDrilldownTimeSeriesView('recent')">Last 15 Years</button>
-          <button class="toggle-button" id="drilldown-time-series-custom" onclick="switchTableDrilldownTimeSeriesView('custom')">Custom</button>
+        <div class="toggle-buttons drilldown-time-series-controls">
+          <button class="toggle-button active" id="drilldown-time-series-recent" data-action="switch-drilldown-time-series-view" data-view="recent">Last 15 Years</button>
+          <button class="toggle-button" id="drilldown-time-series-custom" data-action="switch-drilldown-time-series-view" data-view="custom">Custom</button>
         </div>
 
-        <div id="drilldown-time-series-custom-controls" style="display: none; margin-bottom: 16px; gap: 12px; align-items: center;">
-          <label style="font-weight: 500; color: #475569;">From:</label>
-          <input type="number" id="drilldown-time-series-start-year" min="1900" max="2100" placeholder="YYYY" style="width: 100px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
-          <label style="font-weight: 500; color: #475569;">To:</label>
-          <input type="number" id="drilldown-time-series-end-year" min="1900" max="2100" placeholder="YYYY" style="width: 100px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
-          <button onclick="applyTableDrilldownCustomYearRange()" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">Apply</button>
+        <div id="drilldown-time-series-custom-controls" class="drilldown-time-series-custom-controls" style="display: none;">
+          <label class="drilldown-time-series-label">From:</label>
+          <input type="number" id="drilldown-time-series-start-year" min="1900" max="2100" placeholder="YYYY" class="drilldown-time-series-input">
+          <label class="drilldown-time-series-label">To:</label>
+          <input type="number" id="drilldown-time-series-end-year" min="1900" max="2100" placeholder="YYYY" class="drilldown-time-series-input">
+          <button data-action="apply-drilldown-year-range" class="drilldown-time-series-button">Apply</button>
         </div>
 
-        <div id="table-drilldown-time-series-chart-container" style="margin-top: 16px; min-height: 400px;">
+        <div id="table-drilldown-time-series-chart-container" class="drilldown-time-series-chart">
           <!-- Chart will be populated by JavaScript -->
         </div>
       </div>
@@ -1385,6 +1385,61 @@ document.addEventListener("DOMContentLoaded", function() {
   window.addEventListener("scroll", updateActiveNavOnScroll);
   updateActiveNavOnScroll();
 
+  // Event delegation for data-action attributes
+  document.addEventListener("click", function(event) {
+    const target = event.target.closest("[data-action]");
+    if (!target) return;
+
+    const action = target.dataset.action;
+
+    switch (action) {
+      case "scroll-to-section":
+        scrollToSection(event, target.dataset.section);
+        break;
+      case "export-table":
+        exportTableToCSV();
+        break;
+      case "show-drilldown":
+        showTableDrilldown(target.dataset.table);
+        break;
+      case "hide-drilldown":
+        hideTableDrilldown();
+        break;
+      case "sort-table":
+        sortDeliveryTable(target.dataset.group, parseInt(target.dataset.column), target.dataset.sortType);
+        break;
+      case "switch-time-series-view":
+        switchTimeSeriesView(target.dataset.view);
+        break;
+      case "apply-year-range":
+        applyCustomYearRange();
+        break;
+      case "switch-drilldown-time-series-view":
+        switchTableDrilldownTimeSeriesView(target.dataset.view);
+        break;
+      case "apply-drilldown-year-range":
+        applyTableDrilldownCustomYearRange();
+        break;
+      case "toggle-table-visibility":
+        toggleTableVisibility(target.dataset.table);
+        break;
+    }
+  });
+
+  // Event delegation for change events
+  document.addEventListener("change", function(event) {
+    const target = event.target.closest("[data-action]");
+    if (!target) return;
+
+    const action = target.dataset.action;
+
+    switch (action) {
+      case "switch-table-group":
+        switchTableGroup(target.value);
+        break;
+    }
+  });
+
   // Log available groups
   if (REPORT_DATA && REPORT_DATA.groups) {
     console.log("Available table groups:", Object.keys(REPORT_DATA.groups));
@@ -1753,7 +1808,7 @@ function updateTimeSeriesLegend(allTables) {
     const isVisible = visibleTables.has(table);
     const inactiveClass = isVisible ? "" : " inactive";
 
-    html += '<div class="legend-item' + inactiveClass + '" onclick="toggleTableVisibility(\'' + table + '\')" data-table="' + table + '">';
+    html += '<div class="legend-item' + inactiveClass + '" data-action="toggle-table-visibility" data-table="' + table + '">';
     html += '  <div style="display: flex; align-items: center; gap: 8px;">';
     html += '    <div class="legend-line" style="width: 30px; height: 3px; background-color: ' + color + ';"></div>';
     html += '    <span class="legend-label" style="font-size: 0.9em; color: #475569; font-weight: 500;">' + table + '</span>';

@@ -479,9 +479,18 @@ prepare_table_data <- function(table_name, metrics, dqd_score) {
     dplyr::pull(total)
   type_concept_total <- ifelse(length(type_concept_total) > 0, type_concept_total[1], 0)
 
-  # Tables that don't participate in vocabulary harmonization
-  # This includes pipeline-derived tables and tables like person/death that are not harmonized
-  non_harmonized_tables <- c("condition_era", "drug_era", "dose_era", "observation_period", "cdm_source", "person", "death")
+  # Tables that participate in vocabulary harmonization (clinical data tables only)
+  harmonized_tables <- c(
+    "visit_occurrence",
+    "condition_occurrence",
+    "drug_exposure",
+    "procedure_occurrence",
+    "device_exposure",
+    "measurement",
+    "observation",
+    "note",
+    "specimen"
+  )
 
   # Get same-table mapping details
   same_table_mappings <- metrics$same_table_mappings %>%
@@ -518,8 +527,8 @@ prepare_table_data <- function(table_name, metrics, dqd_score) {
     counts_valid <- TRUE
   }
 
-  # Skip validation warnings for non-harmonized tables
-  if (table_name %in% non_harmonized_tables) {
+  # Skip validation warnings for tables that don't participate in harmonization
+  if (!(table_name %in% harmonized_tables)) {
     counts_valid <- TRUE
   }
 
@@ -530,19 +539,19 @@ prepare_table_data <- function(table_name, metrics, dqd_score) {
     dplyr::pull(total)
   rows_out <- ifelse(length(rows_out) > 0, rows_out[1], 0)
 
-  # Calculate harmonization net impact
+  # Calculate harmonization net impact (only for clinical data tables)
   # Net impact = rows added from 1:N mappings + rows received
   # Note: rows_out is displayed separately in UI and should not be subtracted here
-  if (table_name %in% non_harmonized_tables) {
-    # These tables don't participate in vocab harmonization
-    harmonization <- 0
-  } else {
+  if (table_name %in% harmonized_tables) {
     # Harmonization formula: (same_table_result_rows - valid_rows) + transitions_in
     # - same_table_result_rows: Result rows remaining in this table (includes 1:N duplication)
     # - valid_rows: Valid rows that entered harmonization (excludes quality issues)
     # - transitions_in: Rows received from other tables
     # Using valid_rows instead of initial_rows to exclude rows removed due to quality issues
     harmonization <- same_table_result_rows - valid_rows + transitions_in
+  } else {
+    # This table doesn't participate in vocab harmonization
+    harmonization <- 0
   }
 
   # Pre-calculate percentages for display (avoid business logic in JavaScript)

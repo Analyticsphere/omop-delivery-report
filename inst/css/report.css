@@ -1344,3 +1344,218 @@ tr.row-warning:hover {
   color: #94a3b8;
   font-size: 0.9em;
 }
+
+/* Time Series Controls */
+.time-series-controls-wrapper {
+  margin-bottom: 24px;
+}
+
+#custom-year-controls {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.custom-year-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.year-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.year-input-label {
+  font-weight: 500;
+  color: #475569;
+  font-size: 0.9em;
+}
+
+.year-number-input {
+  width: 80px;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+
+.year-apply-button {
+  padding: 6px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background 0.2s;
+}
+
+.year-apply-button:hover {
+  background: #2563eb;
+}
+
+#time-series-chart-container {
+  width: 100%;
+  height: 500px;
+  position: relative;
+}
+
+#time-series-legend {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+}
+
+/* Vocabulary Harmonization */
+.vocab-versions-container {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.vocab-metric-card {
+  flex: 0 1 400px;
+}
+
+.vocab-metric-value-lg {
+  font-size: 1.1em;
+}
+
+.vocab-subsection-spacing {
+  margin-top: 40px;
+}
+
+.vocab-tables-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-top: 24px;
+}
+
+.vocab-table-heading {
+  margin-bottom: 16px;
+}
+
+.vocab-table-bordered {
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.vocab-table-header-gradient {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+/* Table Drilldown */
+#drilldown-table-name {
+  margin: 0 0 4px 0;
+  color: #0f172a;
+}
+
+.drilldown-subtitle {
+  font-size: 0.9em;
+  color: #64748b;
+  font-weight: 400;
+}
+
+/* Technical Summary */
+.tech-summary-metrics {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.tech-summary-metric-card {
+  flex: 0 1 240px;
+}
+
+.tech-summary-metric-value-lg {
+  font-size: 1.5em;
+}
+
+/* Drilldown Content (JavaScript-generated) */
+.percentage-display {
+  font-size: 0.6em;
+  color: #666;
+}
+
+.drilldown-alert-box {
+  margin-bottom: 20px;
+  background-color: #fef3c7;
+  border-left: 4px solid #f59e0b;
+}
+
+.drilldown-alert-title {
+  margin: 0 0 10px 0;
+  color: #92400e;
+  font-size: 1.1em;
+}
+
+.drilldown-alert-text {
+  margin: 5px 0;
+  color: #92400e;
+  font-size: 0.9em;
+}
+
+.drilldown-dqd-score {
+  min-width: 100px;
+  height: 100px;
+  font-size: 2em;
+}
+
+.drilldown-section-spacing {
+  margin-top: 20px;
+}
+
+.drilldown-time-series-controls {
+  margin-bottom: 16px;
+}
+
+.drilldown-time-series-custom-controls {
+  margin-bottom: 16px;
+  gap: 12px;
+  align-items: center;
+}
+
+.drilldown-time-series-label {
+  font-weight: 500;
+  color: #475569;
+}
+
+.drilldown-time-series-input {
+  width: 100px;
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+}
+
+.drilldown-time-series-button {
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.drilldown-time-series-button:hover {
+  background: #2563eb;
+}
+
+.drilldown-time-series-chart {
+  margin-top: 16px;
+  min-height: 400px;
+}

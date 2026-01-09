@@ -34,12 +34,12 @@ build_sidebar <- function(metrics, dqd_score, has_delivery_data = TRUE, has_dqd_
             <div class="sidebar-subtitle">%s</div>
         </div>
         <nav class="sidebar-nav">
-            <a href="#overview" class="sidebar-nav-item" onclick="scrollToSection(event, \'overview\')">Overview</a>
-            <a href="#dqd-grid" class="sidebar-nav-item" onclick="scrollToSection(event, \'dqd-grid\')">DQD Results</a>
-            <a href="#time-series" class="sidebar-nav-item" onclick="scrollToSection(event, \'time-series\')">Data Timeline</a>
-            <a href="#delivery-report" class="sidebar-nav-item" onclick="scrollToSection(event, \'delivery-report\')">Tables</a>
-            <a href="#vocab-harmonization" class="sidebar-nav-item" onclick="scrollToSection(event, \'vocab-harmonization\')">Vocabularies</a>
-            <a href="#technical-summary" class="sidebar-nav-item" onclick="scrollToSection(event, \'technical-summary\')">Technical</a>
+            <a href="#overview" class="sidebar-nav-item" data-action="scroll-to-section" data-section="overview">Overview</a>
+            <a href="#dqd-grid" class="sidebar-nav-item" data-action="scroll-to-section" data-section="dqd-grid">DQD Results</a>
+            <a href="#time-series" class="sidebar-nav-item" data-action="scroll-to-section" data-section="time-series">Data Timeline</a>
+            <a href="#delivery-report" class="sidebar-nav-item" data-action="scroll-to-section" data-section="delivery-report">Tables</a>
+            <a href="#vocab-harmonization" class="sidebar-nav-item" data-action="scroll-to-section" data-section="vocab-harmonization">Vocabularies</a>
+            <a href="#technical-summary" class="sidebar-nav-item" data-action="scroll-to-section" data-section="technical-summary">Technical</a>
         </nav>
     </div>',
     metrics$metadata$site
@@ -212,10 +212,10 @@ build_delivery_report_section <- function(metrics, table_groups, group_dqd_score
         <div class="controls">
             <div class="control-group">
                 <label class="control-label" for="table-group-selector">Select Table Group:</label>
-                <select id="table-group-selector" onchange="switchTableGroup(this.value)">
+                <select id="table-group-selector" data-action="switch-table-group">
                     %s
                 </select>
-                <button onclick="exportTableToCSV()" class="export-button export-button-spaced">
+                <button data-action="export-table" class="export-button export-button-spaced">
                     Export Counts to CSV
                 </button>
             </div>
@@ -275,8 +275,18 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
     # Otherwise, trust the final_rows artifact
     expected_final <- if (type_concept_total > 0) type_concept_total else final_rows
 
-    # Tables that don't participate in vocabulary harmonization
-    non_harmonized_tables <- c("condition_era", "drug_era", "dose_era", "observation_period", "cdm_source", "person", "death")
+    # Tables that participate in vocabulary harmonization (clinical data tables only)
+    harmonized_tables <- c(
+      "visit_occurrence",
+      "condition_occurrence",
+      "drug_exposure",
+      "procedure_occurrence",
+      "device_exposure",
+      "measurement",
+      "observation",
+      "note",
+      "specimen"
+    )
 
     # Calculate total result rows from same-table mappings
     same_table_result_rows <- metrics$same_table_mappings %>%
@@ -292,31 +302,30 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
       dplyr::pull(total)
     transitions_in <- ifelse(length(transitions_in) > 0, transitions_in[1], 0)
 
-    # Calculate harmonization net impact
+    # Calculate harmonization net impact (only for clinical data tables)
     # IMPORTANT: This must match the formula in generate_full_report.R::prepare_table_data()
     # harmonization = (same_table_result_rows - valid_rows) + transitions_in
-    if (tbl %in% non_harmonized_tables) {
-      harmonization <- 0
-    } else {
+    if (tbl %in% harmonized_tables) {
       harmonization <- same_table_result_rows - valid_rows + transitions_in
+    } else {
+      # This table doesn't participate in vocab harmonization
+      harmonization <- 0
     }
 
     # Format Harmonization with sign
-    harmonization_display <- if (harmonization > 0) {
-      paste0("+", format(harmonization, big.mark = ","))
+    # Use "--" for tables that don't participate in harmonization
+    if (!(tbl %in% harmonized_tables)) {
+      harmonization_display <- "--"
+      harmonization_class <- "harmonization-neutral"
+    } else if (harmonization > 0) {
+      harmonization_display <- paste0("+", format(harmonization, big.mark = ","))
+      harmonization_class <- "harmonization-positive"
     } else if (harmonization < 0) {
-      format(harmonization, big.mark = ",")
+      harmonization_display <- format(harmonization, big.mark = ",")
+      harmonization_class <- "harmonization-negative"
     } else {
-      "0"
-    }
-
-    # Determine harmonization CSS class
-    harmonization_class <- if (harmonization > 0) {
-      "harmonization-positive"
-    } else if (harmonization < 0) {
-      "harmonization-negative"
-    } else {
-      "harmonization-neutral"
+      harmonization_display <- "0"
+      harmonization_class <- "harmonization-neutral"
     }
 
     # Format Quality Issues with minus sign and CSS class
@@ -344,13 +353,12 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
     status_class <- if (delivered) "delivered" else "not-delivered"
 
     # Validate row counts: initial - quality_issues + harmonization = final
-    # Skip validation for pipeline-derived tables
-    pipeline_derived_tables <- c("condition_era", "drug_era", "dose_era", "observation_period", "cdm_source")
+    # Only validate for tables that participate in harmonization
     expected_final <- initial_rows - quality_issues + harmonization
     counts_valid <- (expected_final == final_rows)
 
-    # Only show warning if counts don't match AND table is not pipeline-derived
-    show_count_warning <- !counts_valid && !(tbl %in% pipeline_derived_tables)
+    # Only show warning if counts don't match AND table participates in harmonization
+    show_count_warning <- !counts_valid && (tbl %in% harmonized_tables)
     warning_icon <- if (show_count_warning) " 🧮" else ""
 
     # Quality metric warnings: default dates and invalid concepts
@@ -404,7 +412,7 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
     row_class <- if (has_any_alert) "row-warning" else ""
 
     sprintf('
-        <tr class="clickable %s" onclick="showTableDrilldown(\'%s\')">
+        <tr class="clickable %s" data-action="show-drilldown" data-table="%s">
             <td><strong>%s%s</strong></td>
             <td><span class="status-badge status-%s">%s</span></td>
             <td>%s</td>
@@ -454,13 +462,13 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
             <table id="delivery-table-%s">
                 <thead>
                     <tr>
-                        <th class="sortable" onclick="sortDeliveryTable(\'%s\', 0, \'text\')">Table Name <span class="sort-indicator"></span></th>
+                        <th class="sortable" data-action="sort-table" data-group="%s" data-column="0" data-sort-type="text">Table Name <span class="sort-indicator"></span></th>
                         <th>Status</th>
-                        <th class="sortable" onclick="sortDeliveryTable(\'%s\', 2, \'number\')">Initial Rows <span class="sort-indicator"></span></th>
-                        <th class="sortable" onclick="sortDeliveryTable(\'%s\', 3, \'number\')">Quality Issues <span class="sort-indicator"></span></th>
-                        <th class="sortable" onclick="sortDeliveryTable(\'%s\', 4, \'number\')">Harmonization <span class="sort-indicator"></span></th>
-                        <th class="sortable" onclick="sortDeliveryTable(\'%s\', 5, \'number\')">Final Rows <span class="sort-indicator"></span></th>
-                        <th class="sortable" onclick="sortDeliveryTable(\'%s\', 6, \'number\')">Row-Per-Patient <span class="sort-indicator"></span></th>
+                        <th class="sortable" data-action="sort-table" data-group="%s" data-column="2" data-sort-type="number">Initial Rows <span class="sort-indicator"></span></th>
+                        <th class="sortable" data-action="sort-table" data-group="%s" data-column="3" data-sort-type="number">Quality Issues <span class="sort-indicator"></span></th>
+                        <th class="sortable" data-action="sort-table" data-group="%s" data-column="4" data-sort-type="number">Harmonization <span class="sort-indicator"></span></th>
+                        <th class="sortable" data-action="sort-table" data-group="%s" data-column="5" data-sort-type="number">Final Rows <span class="sort-indicator"></span></th>
+                        <th class="sortable" data-action="sort-table" data-group="%s" data-column="6" data-sort-type="number">Row-Per-Patient <span class="sort-indicator"></span></th>
                     </tr>
                 </thead>
                 <tbody id="delivery-tbody-%s">
@@ -539,41 +547,38 @@ build_time_series_section <- function(metrics, has_delivery_data = TRUE) {
             <h2>Data Timeline</h2>
         </div>
 
-        <div style="margin-bottom: 24px;">
+        <div class="time-series-controls-wrapper">
             <div class="toggle-buttons">
-                <button id="btn-recent-view" class="toggle-button active" onclick="switchTimeSeriesView(\'recent\')">
+                <button id="btn-recent-view" class="toggle-button active" data-action="switch-time-series-view" data-view="recent">
                     Last 15 Years (%d\u2013%d)
                 </button>
-                <button id="btn-custom-view" class="toggle-button" onclick="switchTimeSeriesView(\'custom\')">
+                <button id="btn-custom-view" class="toggle-button" data-action="switch-time-series-view" data-view="custom">
                     Custom
                 </button>
             </div>
 
-            <div id="custom-year-controls" style="display: none; margin-top: 16px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-                <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <label for="custom-start-year" style="font-weight: 500; color: #475569; font-size: 0.9em;">From:</label>
-                        <input type="number" id="custom-start-year" value="%d" min="1900" max="2100"
-                               style="width: 80px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9em;">
+            <div id="custom-year-controls" style="display: none;">
+                <div class="custom-year-range-inputs">
+                    <div class="year-input-group">
+                        <label for="custom-start-year" class="year-input-label">From:</label>
+                        <input type="number" id="custom-start-year" value="%d" min="1900" max="2100" class="year-number-input">
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <label for="custom-end-year" style="font-weight: 500; color: #475569; font-size: 0.9em;">To:</label>
-                        <input type="number" id="custom-end-year" value="%d" min="1900" max="2100"
-                               style="width: 80px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9em;">
+                    <div class="year-input-group">
+                        <label for="custom-end-year" class="year-input-label">To:</label>
+                        <input type="number" id="custom-end-year" value="%d" min="1900" max="2100" class="year-number-input">
                     </div>
-                    <button id="btn-apply-custom-years" onclick="applyCustomYearRange()"
-                            style="padding: 6px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; font-size: 0.9em; transition: background 0.2s;">
+                    <button id="btn-apply-custom-years" data-action="apply-year-range" class="year-apply-button">
                         Apply
                     </button>
                 </div>
             </div>
         </div>
 
-        <div id="time-series-chart-container" style="width: 100%%; height: 500px; position: relative;">
+        <div id="time-series-chart-container">
             <!-- Chart will be rendered by JavaScript -->
         </div>
 
-        <div id="time-series-legend" style="margin-top: 24px; display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;">
+        <div id="time-series-legend">
             <!-- Legend will be populated by JavaScript -->
         </div>
 
@@ -648,15 +653,15 @@ build_vocabulary_harmonization_section <- function(metrics, has_delivery_data = 
             <h2>Vocabulary Harmonization</h2>
         </div>
 
-        <div style="display: flex; gap: 32px; margin-bottom: 30px; justify-content: center; flex-wrap: wrap;">
-            <div class="metric-card" style="flex: 0 1 400px;">
+        <div class="vocab-versions-container">
+            <div class="metric-card vocab-metric-card">
                 <div class="metric-label">Delivered Vocabulary Version</div>
-                <div class="metric-value" style="font-size: 1.1em;">%s</div>
+                <div class="metric-value vocab-metric-value-lg">%s</div>
             </div>
 
-            <div class="metric-card" style="flex: 0 1 400px;">
+            <div class="metric-card vocab-metric-card">
                 <div class="metric-label">Standardized to Vocabulary Version</div>
-                <div class="metric-value" style="font-size: 1.1em;">%s</div>
+                <div class="metric-value vocab-metric-value-lg">%s</div>
             </div>
         </div>
 
@@ -664,13 +669,13 @@ build_vocabulary_harmonization_section <- function(metrics, has_delivery_data = 
             <!-- Dynamically populated by JavaScript -->
         </div>
 
-        <div class="subsection" style="margin-top: 40px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 24px;">
+        <div class="subsection vocab-subsection-spacing">
+            <div class="vocab-tables-grid">
                 <div>
-                    <h4 style="margin-bottom: 16px;">Top Source Vocabularies</h4>
-                    <div class="table-container" style="border: 2px solid #e2e8f0; border-radius: 8px;">
+                    <h4 class="vocab-table-heading">Top Source Vocabularies</h4>
+                    <div class="table-container vocab-table-bordered">
                         <table class="vocab-table">
-                            <thead style="background: linear-gradient(135deg, #f1f5f9 0%%, #e2e8f0 100%%);">
+                            <thead class="vocab-table-header-gradient">
                                 <tr>
                                     <th>Vocabulary</th>
                                     <th>Count</th>
@@ -683,10 +688,10 @@ build_vocabulary_harmonization_section <- function(metrics, has_delivery_data = 
                     </div>
                 </div>
                 <div>
-                    <h4 style="margin-bottom: 16px;">Top Target Vocabularies</h4>
-                    <div class="table-container" style="border: 2px solid #e2e8f0; border-radius: 8px;">
+                    <h4 class="vocab-table-heading">Top Target Vocabularies</h4>
+                    <div class="table-container vocab-table-bordered">
                         <table class="vocab-table">
-                            <thead style="background: linear-gradient(135deg, #f1f5f9 0%%, #e2e8f0 100%%);">
+                            <thead class="vocab-table-header-gradient">
                                 <tr>
                                     <th>Vocabulary</th>
                                     <th>Count</th>
@@ -712,12 +717,12 @@ build_vocabulary_harmonization_section <- function(metrics, has_delivery_data = 
 build_table_drilldown_section <- function() {
   '
     <div class="section drill-down" id="table-drilldown" style="display: none;">
-        <button class="back-button" onclick="hideTableDrilldown()">← Back to Delivery Report</button>
+        <button class="back-button" data-action="hide-drilldown">← Back to Delivery Report</button>
 
         <div class="section-header">
             <div>
-                <h2 id="drilldown-table-name" style="margin: 0 0 4px 0; color: #0f172a;">Table Name</h2>
-                <div style="font-size: 0.9em; color: #64748b; font-weight: 400;">Table Drilldown Report</div>
+                <h2 id="drilldown-table-name">Table Name</h2>
+                <div class="drilldown-subtitle">Table Drilldown Report</div>
             </div>
         </div>
 
@@ -829,28 +834,28 @@ build_technical_summary_section <- function(metrics, has_delivery_data = TRUE) {
             <h2>Technical Summary</h2>
         </div>
 
-        <div style="display: flex; gap: 20px; margin-bottom: 30px; justify-content: center; flex-wrap: wrap;">
-            <div class="metric-card" style="flex: 0 1 240px;">
+        <div class="tech-summary-metrics">
+            <div class="metric-card tech-summary-metric-card">
                 <div class="metric-label">Processing Date</div>
-                <div class="metric-value" style="font-size: 1.5em;">%s</div>
+                <div class="metric-value tech-summary-metric-value-lg">%s</div>
             </div>
 
-            <div class="metric-card" style="flex: 0 1 240px;">
+            <div class="metric-card tech-summary-metric-card">
                 <div class="metric-label">Delivered CDM Version</div>
-                <div class="metric-value" style="font-size: 1.5em;">%s</div>
+                <div class="metric-value tech-summary-metric-value-lg">%s</div>
             </div>
 
-            <div class="metric-card" style="flex: 0 1 240px;">
+            <div class="metric-card tech-summary-metric-card">
                 <div class="metric-label">Standardized CDM Version</div>
-                <div class="metric-value" style="font-size: 1.5em;">%s</div>
+                <div class="metric-value tech-summary-metric-value-lg">%s</div>
             </div>
 
-            <div class="metric-card" style="flex: 0 1 240px;">
+            <div class="metric-card tech-summary-metric-card">
                 <div class="metric-label">File Format</div>
-                <div class="metric-value" style="font-size: 1.5em;">%s</div>
+                <div class="metric-value tech-summary-metric-value-lg">%s</div>
             </div>
         </div>
-        <p style="text-align: center; margin-top: 30px; color: #94a3b8; font-size: 0.9em;">Pipeline Version: %s</p>
+        <p class="tech-summary-footer">Pipeline Version: %s</p>
     </div>',
     metrics$metadata$processing_date,
     metrics$metadata$delivered_cdm_version,
