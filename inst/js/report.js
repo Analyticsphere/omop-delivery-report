@@ -537,11 +537,12 @@ function buildTableDrilldownContent(tableData) {
   var rowsOut = tableData.rows_out || 0;
   var harmonizationNet = tableData.harmonization || 0;
 
-  // Calculate rows added from 1:N same-table mappings using pre-computed values
-  // Formula: rows_added_from_1N = (same_table_result_rows - initial_rows) + rows_out
+  // Calculate rows added from 1:N same-table mappings
+  // Use valid_rows (not initial_rows) as the baseline and add back rows_out
+  // This gives us the net expansion from 1:N mappings, separate from rows moved out
   var same_table_result_rows = tableData.same_table_result_rows || 0;
-  var initial_rows = tableData.initial_rows || 0;
-  var rowsAddedFromMappings = (same_table_result_rows - initial_rows) + rowsOut;
+  var valid_rows = tableData.valid_rows || 0;
+  var rowsAddedFromMappings = (same_table_result_rows - valid_rows) + rowsOut;
 
   // Only show harmonization flow if there was actual harmonization activity
   if (harmonizationNet !== 0) {

@@ -523,25 +523,27 @@ prepare_table_data <- function(table_name, metrics, dqd_score) {
     counts_valid <- TRUE
   }
 
-  # Calculate harmonization using the correct formula
-  # harmonization = same_table_result_rows - initial_rows + transitions_in
-  if (table_name %in% non_harmonized_tables) {
-    # These tables don't participate in vocab harmonization
-    harmonization <- 0
-  } else {
-    # Harmonization formula: same_table_result_rows - initial_rows + transitions_in
-    # - same_table_result_rows: Result rows remaining in this table (includes 1:N duplication)
-    # - initial_rows: Row count at harmonization entry point
-    # - transitions_in: Rows received from other tables
-    harmonization <- same_table_result_rows - initial_rows_calc + transitions_in
-  }
-
-  # Calculate rows sent out to other tables (for vocab harmonization display)
+  # Calculate rows sent out to other tables (needed for harmonization calculation)
   rows_out <- transitions %>%
     dplyr::filter(source_table == !!table_name, target_table != !!table_name) %>%
     dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
     dplyr::pull(total)
   rows_out <- ifelse(length(rows_out) > 0, rows_out[1], 0)
+
+  # Calculate harmonization net impact
+  # Net impact = rows added from 1:N mappings + rows received
+  # Note: rows_out is displayed separately in UI and should not be subtracted here
+  if (table_name %in% non_harmonized_tables) {
+    # These tables don't participate in vocab harmonization
+    harmonization <- 0
+  } else {
+    # Harmonization formula: (same_table_result_rows - valid_rows) + transitions_in
+    # - same_table_result_rows: Result rows remaining in this table (includes 1:N duplication)
+    # - valid_rows: Valid rows that entered harmonization (excludes quality issues)
+    # - transitions_in: Rows received from other tables
+    # Using valid_rows instead of initial_rows to exclude rows removed due to quality issues
+    harmonization <- same_table_result_rows - valid_rows + transitions_in
+  }
 
   # Pre-calculate percentages for display (avoid business logic in JavaScript)
   default_date_percent <- if (final_rows > 0) (default_date_rows / final_rows) * 100 else 0
