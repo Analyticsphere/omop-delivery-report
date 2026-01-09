@@ -162,6 +162,7 @@ create_empty_dqd_scores <- function() {
 #'
 #' Extracts and organizes metrics from delivery_report.csv into categorized tibbles.
 #' Parses table counts, type concepts, vocabularies, harmonization data, and metadata.
+#' Uses string pattern matching to identify metrics
 #'
 #' @param delivery_data Tibble from load_delivery_report()
 #' @return List containing parsed metrics: valid_columns, invalid_columns, valid_tables,
@@ -289,7 +290,6 @@ parse_delivery_metrics <- function(delivery_data) {
 
   # Parse vocab harmonization same-table mappings
   # The artifact total_rows represents RESULT ROW COUNT in the harmonized data
-  # For display purposes, we calculate rows_added to show in the 1:N breakdown table
   metrics$same_table_mappings <- delivery_data %>%
     dplyr::filter(stringr::str_detect(name, "^Vocab harmonization same-table mapping:")) %>%
     dplyr::mutate(
@@ -303,7 +303,7 @@ parse_delivery_metrics <- function(delivery_data) {
     ) %>%
     dplyr::select(table_name, mapping, source_multiplier, target_multiplier, total_rows, rows_added)
 
-  # Parse vocab harmonization row dispositions (kept for informational purposes)
+  # Parse vocab harmonization row dispositions
   metrics$row_dispositions <- delivery_data %>%
     dplyr::filter(stringr::str_detect(name, "^Vocab harmonization row disposition:")) %>%
     dplyr::mutate(
