@@ -699,23 +699,35 @@ tr.row-warning:hover {
 /* DQD Grid */
 .dqd-grid-table {
   text-align: center;
+  width: 100%;
+  table-layout: fixed;
 }
 
 .dqd-grid-table th {
   text-align: center;
-  padding: 14px 8px;
+  padding: 8px 12px;
+  white-space: nowrap;
 }
 
 .dqd-grid-table td {
   text-align: center;
-  padding: 12px 8px;
+  padding: 8px 12px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .dqd-grid-table td:first-child {
   text-align: left;
   font-weight: 600;
   color: #0f172a;
+}
+
+/* First column (Category) should be left-aligned and have fixed width */
+.dqd-grid-table th:first-child,
+.dqd-grid-table td:first-child {
+  text-align: left;
+  width: 140px;
+  padding: 8px 16px;
 }
 
 .pass-cell {
