@@ -292,12 +292,13 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
       dplyr::pull(total)
     transitions_in <- ifelse(length(transitions_in) > 0, transitions_in[1], 0)
 
-    # Calculate harmonization using the correct formula
-    # harmonization = same_table_result_rows - initial_rows + transitions_in
+    # Calculate harmonization net impact
+    # IMPORTANT: This must match the formula in generate_full_report.R::prepare_table_data()
+    # harmonization = (same_table_result_rows - valid_rows) + transitions_in
     if (tbl %in% non_harmonized_tables) {
       harmonization <- 0
     } else {
-      harmonization <- same_table_result_rows - initial_rows + transitions_in
+      harmonization <- same_table_result_rows - valid_rows + transitions_in
     }
 
     # Format Harmonization with sign
