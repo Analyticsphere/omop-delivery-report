@@ -236,24 +236,24 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
 
   # Calculate number of participants
   num_participants <- sum(
-    ifelse(nrow(metrics$valid_row_counts %>% dplyr::filter(table_name == "person")) > 0,
-           metrics$valid_row_counts %>% dplyr::filter(table_name == "person") %>% dplyr::pull(count), 0),
-    ifelse(nrow(metrics$invalid_row_counts %>% dplyr::filter(table_name == "person")) > 0,
-           metrics$invalid_row_counts %>% dplyr::filter(table_name == "person") %>% dplyr::pull(count), 0)
+    ifelse(nrow(metrics$valid_row_counts |> dplyr::filter(table_name == "person")) > 0,
+           metrics$valid_row_counts |> dplyr::filter(table_name == "person") |> dplyr::pull(count), 0),
+    ifelse(nrow(metrics$invalid_row_counts |> dplyr::filter(table_name == "person")) > 0,
+           metrics$invalid_row_counts |> dplyr::filter(table_name == "person") |> dplyr::pull(count), 0)
   )
 
   # Build table rows
   table_rows <- paste(sapply(group_tables, function(tbl) {
-    valid_rows <- metrics$valid_row_counts %>% dplyr::filter(table_name == tbl) %>% dplyr::pull(count)
+    valid_rows <- metrics$valid_row_counts |> dplyr::filter(table_name == tbl) |> dplyr::pull(count)
     valid_rows <- ifelse(length(valid_rows) > 0, valid_rows[1], 0)
 
-    invalid_rows <- metrics$invalid_row_counts %>% dplyr::filter(table_name == tbl) %>% dplyr::pull(count)
+    invalid_rows <- metrics$invalid_row_counts |> dplyr::filter(table_name == tbl) |> dplyr::pull(count)
     invalid_rows <- ifelse(length(invalid_rows) > 0, invalid_rows[1], 0)
 
-    final_rows <- metrics$final_row_counts %>% dplyr::filter(table_name == tbl) %>% dplyr::pull(count)
+    final_rows <- metrics$final_row_counts |> dplyr::filter(table_name == tbl) |> dplyr::pull(count)
     final_rows <- ifelse(length(final_rows) > 0, final_rows[1], 0)
 
-    missing_rows <- metrics$missing_person_id %>% dplyr::filter(table_name == tbl) %>% dplyr::pull(count)
+    missing_rows <- metrics$missing_person_id |> dplyr::filter(table_name == tbl) |> dplyr::pull(count)
     missing_rows <- ifelse(length(missing_rows) > 0, missing_rows[1],
                            # For person table, use the person count if no specific entry exists
                            ifelse(tbl == "person", metrics$missing_person_id_count, 0))
@@ -264,9 +264,9 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
     quality_issues <- invalid_rows + missing_rows
 
     # Get type concepts for validation
-    type_concept_total <- metrics$type_concepts_grouped %>%
-      dplyr::filter(table_name == tbl) %>%
-      dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
+    type_concept_total <- metrics$type_concepts_grouped |>
+      dplyr::filter(table_name == tbl) |>
+      dplyr::summarise(total = sum(count, na.rm = TRUE)) |>
       dplyr::pull(total)
     type_concept_total <- ifelse(length(type_concept_total) > 0, type_concept_total[1], 0)
 
@@ -289,16 +289,16 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
     )
 
     # Calculate total result rows from same-table mappings
-    same_table_result_rows <- metrics$same_table_mappings %>%
-      dplyr::filter(table_name == tbl) %>%
-      dplyr::summarise(total = sum(total_rows, na.rm = TRUE)) %>%
+    same_table_result_rows <- metrics$same_table_mappings |>
+      dplyr::filter(table_name == tbl) |>
+      dplyr::summarise(total = sum(total_rows, na.rm = TRUE)) |>
       dplyr::pull(total)
     same_table_result_rows <- ifelse(length(same_table_result_rows) > 0, same_table_result_rows[1], 0)
 
     # Get rows received from OTHER tables (cross-table transitions)
-    transitions_in <- metrics$table_transitions %>%
-      dplyr::filter(target_table == tbl, source_table != tbl) %>%
-      dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
+    transitions_in <- metrics$table_transitions |>
+      dplyr::filter(target_table == tbl, source_table != tbl) |>
+      dplyr::summarise(total = sum(count, na.rm = TRUE)) |>
       dplyr::pull(total)
     transitions_in <- ifelse(length(transitions_in) > 0, transitions_in[1], 0)
 
@@ -369,21 +369,21 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
       "concept_ancestor", "source_to_concept_map", "drug_strength"
     )
 
-    default_date_count <- metrics$default_date_values %>%
-      dplyr::filter(table_name == tbl) %>%
-      dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
+    default_date_count <- metrics$default_date_values |>
+      dplyr::filter(table_name == tbl) |>
+      dplyr::summarise(total = sum(count, na.rm = TRUE)) |>
       dplyr::pull(total)
     default_date_count <- ifelse(length(default_date_count) > 0, default_date_count[1], 0)
 
-    invalid_concept_count <- metrics$invalid_concepts %>%
-      dplyr::filter(table_name == tbl) %>%
-      dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
+    invalid_concept_count <- metrics$invalid_concepts |>
+      dplyr::filter(table_name == tbl) |>
+      dplyr::summarise(total = sum(count, na.rm = TRUE)) |>
       dplyr::pull(total)
     invalid_concept_count <- ifelse(length(invalid_concept_count) > 0, invalid_concept_count[1], 0)
 
     # Get referential integrity violations count
-    referential_integrity_count <- metrics$referential_integrity_violations %>%
-      dplyr::filter(table_name == tbl) %>%
+    referential_integrity_count <- metrics$referential_integrity_violations |>
+      dplyr::filter(table_name == tbl) |>
       dplyr::pull(count)
     referential_integrity_count <- ifelse(length(referential_integrity_count) > 0, referential_integrity_count[1], 0)
 
@@ -613,10 +613,10 @@ build_vocabulary_harmonization_section <- function(metrics, has_delivery_data = 
   }
 
   # Overall source vocabularies
-  overall_source_vocab <- metrics$source_vocabularies %>%
-    dplyr::group_by(vocabulary) %>%
-    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
-    dplyr::arrange(desc(count)) %>%
+  overall_source_vocab <- metrics$source_vocabularies |>
+    dplyr::group_by(vocabulary) |>
+    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
+    dplyr::arrange(desc(count)) |>
     head(10)
 
   source_vocab_rows <- if (nrow(overall_source_vocab) > 0) {
@@ -630,10 +630,10 @@ build_vocabulary_harmonization_section <- function(metrics, has_delivery_data = 
   }
 
   # Overall target vocabularies
-  overall_target_vocab <- metrics$target_vocabularies %>%
-    dplyr::group_by(vocabulary) %>%
-    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
-    dplyr::arrange(desc(count)) %>%
+  overall_target_vocab <- metrics$target_vocabularies |>
+    dplyr::group_by(vocabulary) |>
+    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
+    dplyr::arrange(desc(count)) |>
     head(10)
 
   target_vocab_rows <- if (nrow(overall_target_vocab) > 0) {
@@ -741,13 +741,13 @@ build_dqd_grid_section <- function(dqd_scores, has_dqd_data = TRUE) {
   }
 
   # Reshape for display
-  grid_wide <- dqd_scores$grid %>%
+  grid_wide <- dqd_scores$grid |>
     tidyr::pivot_wider(names_from = context, values_from = c(Pass, Fail, Total, `% Pass`))
 
   categories <- c("Plausibility", "Conformance", "Completeness", "Total")
 
   grid_rows <- paste(sapply(categories, function(cat_name) {
-    row_data <- grid_wide %>% dplyr::filter(category == cat_name)
+    row_data <- grid_wide |> dplyr::filter(category == cat_name)
 
     if (nrow(row_data) > 0) {
       row_class <- if (cat_name == "Total") ' class="total-row"' else ''

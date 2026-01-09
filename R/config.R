@@ -34,12 +34,12 @@ default_config <- function() {
     # Color scheme (colorblind-friendly)
     colors = list(
       type_concepts = list(
-        ehr = "#0073C2",
-        claims = "#EFC000",
-        disease_registry = "#A95AA1",
-        patient_reported = "#CD534C",
-        unlabeled = "#868686",
-        other = "#7AA6DC"
+        EHR = "#0073C2",
+        Claims = "#EFC000",
+        "Disease registry" = "#A95AA1",
+        "Patient reported" = "#CD534C",
+        Unlabeled = "#868686",
+        Other = "#7AA6DC"
       ),
       dqd_scores = list(
         good_threshold = 95,    # >= 95% is "good"

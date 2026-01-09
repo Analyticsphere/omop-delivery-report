@@ -59,7 +59,7 @@ calculate_table_group_dqd_score <- function(dqd_data, tables) {
   tables_upper <- toupper(tables)
 
   # Filter to checks for these tables
-  table_checks <- dqd_data %>%
+  table_checks <- dqd_data |>
     dplyr::filter(toupper(cdmTableName) %in% tables_upper)
 
   if (nrow(table_checks) == 0) {
@@ -138,7 +138,7 @@ create_dqd_grid <- function(dqd_data) {
   }
 
   # Extract category and context from checkName
-  dqd_data <- dqd_data %>%
+  dqd_data <- dqd_data |>
     dplyr::mutate(
       category = dplyr::case_when(
         grepl("plausible", checkName, ignore.case = TRUE) ~ "Plausibility",
@@ -154,35 +154,77 @@ create_dqd_grid <- function(dqd_data) {
     )
 
   # Aggregate by category and context
-  grid <- dqd_data %>%
-    dplyr::group_by(category, context) %>%
+  grid <- dqd_data |>
+    dplyr::group_by(category, context) |>
     dplyr::summarise(
       Pass = sum(failed == 0, na.rm = TRUE),
       Fail = sum(failed > 0, na.rm = TRUE),
       Total = dplyr::n(),
       .groups = "drop"
-    ) %>%
+    ) |>
     dplyr::mutate(
       `% Pass` = round((Pass / Total) * 100, 0)
     )
 
   # Add totals row for each category
-  category_totals <- grid %>%
-    dplyr::group_by(category) %>%
+  category_totals <- grid |>
+    dplyr::group_by(category) |>
     dplyr::summarise(
       Pass = sum(Pass),
       Fail = sum(Fail),
       Total = sum(Total),
       .groups = "drop"
-    ) %>%
+    ) |>
     dplyr::mutate(
       context = "Total",
       `% Pass` = round((Pass / Total) * 100, 0)
-    ) %>%
+    ) |>
+    dplyr::select(category, context, Pass, Fail, Total, `% Pass`)
+
+  # Add grand total row (sum across all categories)
+  grand_total_verification <- grid |>
+    dplyr::filter(context == "Verification") |>
+    dplyr::summarise(
+      Pass = sum(Pass),
+      Fail = sum(Fail),
+      Total = sum(Total)
+    ) |>
+    dplyr::mutate(
+      category = "Total",
+      context = "Verification",
+      `% Pass` = round((Pass / Total) * 100, 0)
+    ) |>
+    dplyr::select(category, context, Pass, Fail, Total, `% Pass`)
+
+  grand_total_validation <- grid |>
+    dplyr::filter(context == "Validation") |>
+    dplyr::summarise(
+      Pass = sum(Pass),
+      Fail = sum(Fail),
+      Total = sum(Total)
+    ) |>
+    dplyr::mutate(
+      category = "Total",
+      context = "Validation",
+      `% Pass` = round((Pass / Total) * 100, 0)
+    ) |>
+    dplyr::select(category, context, Pass, Fail, Total, `% Pass`)
+
+  grand_total_total <- category_totals |>
+    dplyr::summarise(
+      Pass = sum(Pass),
+      Fail = sum(Fail),
+      Total = sum(Total)
+    ) |>
+    dplyr::mutate(
+      category = "Total",
+      context = "Total",
+      `% Pass` = round((Pass / Total) * 100, 0)
+    ) |>
     dplyr::select(category, context, Pass, Fail, Total, `% Pass`)
 
   # Combine and sort
-  grid <- dplyr::bind_rows(grid, category_totals) %>%
+  grid <- dplyr::bind_rows(grid, category_totals, grand_total_verification, grand_total_validation, grand_total_total) |>
     dplyr::arrange(category, context)
 
   return(grid)

@@ -2,44 +2,53 @@
 % Please edit documentation in R/generate_full_report.R
 \name{generate_full_omop_report}
 \alias{generate_full_omop_report}
-\title{Generate complete interactive OMOP delivery report}
+\title{Generate complete OMOP delivery report}
 \usage{
 generate_full_omop_report(
   delivery_report_path = "delivery_report.csv",
   dqd_results_path = "dqd_results.csv",
-  output_path = "omop_delivery_report_full.html"
+  output_path = "omop_delivery_report.html",
+  config = default_config()
 )
 }
 \arguments{
-\item{delivery_report_path}{Character. Path to delivery_report.csv (local or gs:// URI).
-Required columns: name, value_as_string, value_as_number}
+\item{delivery_report_path}{Path to delivery_report.csv (local or gs:// URI)}
 
-\item{dqd_results_path}{Character. Path to dqd_results.csv (local or gs:// URI).
-Required columns: checkId, failed, passed, category, cdmTableName}
+\item{dqd_results_path}{Path to dqd_results.csv (local or gs:// URI)}
 
-\item{output_path}{Character. Output path for HTML file (local or gs:// URI).}
+\item{output_path}{Path for output HTML file (local or gs:// URI)}
+
+\item{config}{Configuration list (default: default_config())}
 }
 \value{
-Invisibly returns output path
+Invisible NULL (writes file as side effect)
 }
 \description{
-Creates a self-contained HTML report with data quality metrics, table summaries,
-vocabulary harmonization flows, and interactive drilldowns. No external dependencies.
-Supports both local filesystem and Google Cloud Storage paths.
+Main entry point for report generation. Loads data, calculates metrics,
+and generates an HTML report with embedded JavaScript and CSS.
+}
+\details{
+Workflow:
+  1. Load and validate input data (CSV files)
+  2. Calculate all metrics and scores
+  3. Transform data for display
+  4. Build HTML report from templates
+  5. Write output file
 }
 \examples{
-# Local mode
-generate_full_omop_report(
-  delivery_report_path = "data/delivery_report.csv",
-  dqd_results_path = "data/dqd_results.csv",
-  output_path = "output/report.html"
-)
+\dontrun{
+  # Local files
+  generate_full_omop_report(
+    "data/delivery_report.csv",
+    "data/dqd_results.csv",
+    "reports/omop_report.html"
+  )
 
-# GCS mode
-generate_full_omop_report(
-  delivery_report_path = "gs://my-bucket/data/delivery_report.csv",
-  dqd_results_path = "gs://my-bucket/data/dqd_results.csv",
-  output_path = "gs://my-bucket/reports/report.html"
-)
-
+  # GCS paths
+  generate_full_omop_report(
+    "gs://my-bucket/delivery_report.csv",
+    "gs://my-bucket/dqd_results.csv",
+    "gs://my-bucket/report.html"
+  )
+}
 }

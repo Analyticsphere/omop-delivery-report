@@ -30,52 +30,52 @@ build_report_data_json <- function(metrics, dqd_data, table_groups, group_dqd_sc
     names(table_data_list) <- group_tables
 
     # Group-level vocabularies
-    group_source_vocab <- metrics$source_vocabularies %>%
-      dplyr::filter(table_name %in% group_tables) %>%
-      dplyr::group_by(vocabulary) %>%
-      dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
+    group_source_vocab <- metrics$source_vocabularies |>
+      dplyr::filter(table_name %in% group_tables) |>
+      dplyr::group_by(vocabulary) |>
+      dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
       dplyr::arrange(desc(count))
 
-    group_target_vocab <- metrics$target_vocabularies %>%
-      dplyr::filter(table_name %in% group_tables) %>%
-      dplyr::group_by(vocabulary) %>%
-      dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
+    group_target_vocab <- metrics$target_vocabularies |>
+      dplyr::filter(table_name %in% group_tables) |>
+      dplyr::group_by(vocabulary) |>
+      dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
       dplyr::arrange(desc(count))
 
     # Group-level transitions
-    group_transitions <- metrics$table_transitions %>%
+    group_transitions <- metrics$table_transitions |>
       dplyr::filter(source_table %in% group_tables | target_table %in% group_tables)
 
     # Group-level type concepts - DETAILED (with type_concept field)
-    group_type_concepts_detailed <- metrics$type_concepts_grouped %>%
-      dplyr::filter(table_name %in% group_tables) %>%
-      dplyr::group_by(type_group, type_concept) %>%
+    group_type_concepts_detailed <- metrics$type_concepts_grouped |>
+      dplyr::filter(table_name %in% group_tables) |>
+      dplyr::group_by(type_group, type_concept) |>
       dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop")
 
     # Aggregate by type_group only and ensure all groups present - SUMMARY
-    group_type_concepts_summary <- group_type_concepts_detailed %>%
-      dplyr::group_by(type_group) %>%
-      dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
+    group_type_concepts_summary <- group_type_concepts_detailed |>
+      dplyr::group_by(type_group) |>
+      dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
       ensure_all_type_groups()
 
     # Add percentages to summary
     total_type_concept_count <- sum(group_type_concepts_summary$count, na.rm = TRUE)
-    group_type_concepts_summary <- group_type_concepts_summary %>%
+    group_type_concepts_summary <- group_type_concepts_summary |>
       dplyr::mutate(
         percent = if (total_type_concept_count > 0) (count / total_type_concept_count) * 100 else 0
       )
 
     # Order detailed type concepts by canonical group, then count descending
-    group_type_concepts <- group_type_concepts_detailed %>%
-      dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) %>%
-      dplyr::arrange(type_group, desc(count)) %>%
+    group_type_concepts <- group_type_concepts_detailed |>
+      dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) |>
+      dplyr::arrange(type_group, desc(count)) |>
       dplyr::mutate(type_group = as.character(type_group))
 
     # Calculate transition statistics for this group
     total_transition_rows <- sum(group_transitions$count, na.rm = TRUE)
-    same_table_transitions <- group_transitions %>%
+    same_table_transitions <- group_transitions |>
       dplyr::filter(source_table == target_table)
-    cross_table_transitions <- group_transitions %>%
+    cross_table_transitions <- group_transitions |>
       dplyr::filter(source_table != target_table)
     same_table_count <- sum(same_table_transitions$count, na.rm = TRUE)
     cross_table_count <- sum(cross_table_transitions$count, na.rm = TRUE)
@@ -100,40 +100,40 @@ build_report_data_json <- function(metrics, dqd_data, table_groups, group_dqd_sc
   overall_transitions <- metrics$table_transitions
 
   # Add overall harmonization statuses (summarize across all tables)
-  overall_harmonization_statuses <- metrics$harmonization_statuses %>%
-    dplyr::group_by(status) %>%
-    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
+  overall_harmonization_statuses <- metrics$harmonization_statuses |>
+    dplyr::group_by(status) |>
+    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
     dplyr::arrange(desc(count))
 
   # Add overall type concepts - DETAILED (with type_concept field)
-  overall_type_concepts_detailed <- metrics$type_concepts_grouped %>%
-    dplyr::group_by(type_group, type_concept) %>%
+  overall_type_concepts_detailed <- metrics$type_concepts_grouped |>
+    dplyr::group_by(type_group, type_concept) |>
     dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop")
 
   # Aggregate by type_group only and ensure all groups present - SUMMARY
-  overall_type_concepts_summary <- overall_type_concepts_detailed %>%
-    dplyr::group_by(type_group) %>%
-    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
+  overall_type_concepts_summary <- overall_type_concepts_detailed |>
+    dplyr::group_by(type_group) |>
+    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
     ensure_all_type_groups()
 
   # Add percentages to overall summary
   total_overall_count <- sum(overall_type_concepts_summary$count, na.rm = TRUE)
-  overall_type_concepts_summary <- overall_type_concepts_summary %>%
+  overall_type_concepts_summary <- overall_type_concepts_summary |>
     dplyr::mutate(
       percent = if (total_overall_count > 0) (count / total_overall_count) * 100 else 0
     )
 
   # Order detailed type concepts by canonical group, then count descending
-  overall_type_concepts <- overall_type_concepts_detailed %>%
-    dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) %>%
-    dplyr::arrange(type_group, desc(count)) %>%
+  overall_type_concepts <- overall_type_concepts_detailed |>
+    dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) |>
+    dplyr::arrange(type_group, desc(count)) |>
     dplyr::mutate(type_group = as.character(type_group))
 
   # Calculate overall transition statistics
   total_overall_transition_rows <- sum(overall_transitions$count, na.rm = TRUE)
-  overall_same_table_transitions <- overall_transitions %>%
+  overall_same_table_transitions <- overall_transitions |>
     dplyr::filter(source_table == target_table)
-  overall_cross_table_transitions <- overall_transitions %>%
+  overall_cross_table_transitions <- overall_transitions |>
     dplyr::filter(source_table != target_table)
   overall_same_table_count <- sum(overall_same_table_transitions$count, na.rm = TRUE)
   overall_cross_table_count <- sum(overall_cross_table_transitions$count, na.rm = TRUE)
@@ -221,10 +221,10 @@ build_vocab_table_rows <- function(vocab_data, top_n = 10) {
   }
 
   # Aggregate and get top N
-  top_vocabs <- vocab_data %>%
-    dplyr::group_by(vocabulary) %>%
-    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
-    dplyr::arrange(desc(count)) %>%
+  top_vocabs <- vocab_data |>
+    dplyr::group_by(vocabulary) |>
+    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
+    dplyr::arrange(desc(count)) |>
     head(top_n)
 
   # Format for display

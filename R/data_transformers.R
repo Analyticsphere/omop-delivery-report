@@ -4,6 +4,302 @@
 # Transform raw metrics into display-ready data structures.
 # All functions are pure and testable.
 
+# ==============================================================================
+# Data Parsing
+# ==============================================================================
+
+#' Parse delivery report metrics from CSV data
+#'
+#' Extracts all metrics from the delivery report CSV into a structured list.
+#'
+#' @param delivery_data Data frame with name, value_as_string, value_as_number columns
+#' @return List containing all parsed metrics
+parse_delivery_metrics <- function(delivery_data) {
+
+  metrics <- list()
+
+  # Parse valid column names
+  metrics$valid_columns <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Valid column name:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Valid column name: (\\w+)\\.(\\w+)")[, 2],
+      column_name = stringr::str_match(name, "Valid column name: (\\w+)\\.(\\w+)")[, 3]
+    ) |>
+    dplyr::select(table_name, column_name)
+
+  # Parse invalid column names
+  metrics$invalid_columns <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Invalid column name:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Invalid column name: (\\w+)\\.(\\w+)")[, 2],
+      column_name = stringr::str_match(name, "Invalid column name: (\\w+)\\.(\\w+)")[, 3]
+    ) |>
+    dplyr::select(table_name, column_name)
+
+  # Parse valid table names
+  metrics$valid_tables <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Valid table name:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Valid table name: (\\w+)")[, 2]
+    ) |>
+    dplyr::select(table_name) |>
+    dplyr::distinct()
+
+  # Parse invalid table names
+  metrics$invalid_tables <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Invalid table name:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Invalid table name: (\\w+)")[, 2]
+    ) |>
+    dplyr::select(table_name) |>
+    dplyr::distinct()
+
+  # Parse valid row counts
+  metrics$valid_row_counts <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Valid row count:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Valid row count: (\\w+)")[, 2],
+      count = value_as_number
+    ) |>
+    dplyr::select(table_name, count)
+
+  # Parse invalid row counts
+  metrics$invalid_row_counts <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Invalid row count:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Invalid row count: (\\w+)")[, 2],
+      count = value_as_number
+    ) |>
+    dplyr::select(table_name, count)
+
+  # Parse final row counts
+  metrics$final_row_counts <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Final row count:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Final row count: (\\w+)")[, 2],
+      count = value_as_number
+    ) |>
+    dplyr::select(table_name, count)
+
+  # Parse type concept breakdowns
+  metrics$type_concepts <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Type concept breakdown:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Type concept breakdown: (\\w+)")[, 2],
+      type_concept = value_as_string,
+      count = value_as_number
+    ) |>
+    dplyr::select(table_name, type_concept, count)
+
+  # Parse source vocabulary breakdowns
+  metrics$source_vocabularies <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Source vocabulary breakdown:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Source vocabulary breakdown: (\\w+)\\.(\\w+)")[, 2],
+      column_name = stringr::str_match(name, "Source vocabulary breakdown: (\\w+)\\.(\\w+)")[, 3],
+      vocabulary = value_as_string,
+      count = value_as_number
+    ) |>
+    dplyr::select(table_name, column_name, vocabulary, count)
+
+  # Parse target vocabulary breakdowns
+  metrics$target_vocabularies <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Target vocabulary breakdown:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Target vocabulary breakdown: (\\w+)\\.(\\w+)")[, 2],
+      column_name = stringr::str_match(name, "Target vocabulary breakdown: (\\w+)\\.(\\w+)")[, 3],
+      vocabulary = value_as_string,
+      count = value_as_number
+    ) |>
+    dplyr::select(table_name, column_name, vocabulary, count)
+
+  # Parse vocab harmonization table transitions
+  metrics$table_transitions <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Vocab harmonization table transition:")) |>
+    dplyr::mutate(
+      source_table = stringr::str_match(name, "Vocab harmonization table transition: (\\w+) to (\\w+)")[, 2],
+      target_table = stringr::str_match(name, "Vocab harmonization table transition: (\\w+) to (\\w+)")[, 3],
+      count = value_as_number
+    ) |>
+    dplyr::select(source_table, target_table, count)
+
+  # Parse vocab harmonization statuses (exclude "domain check" per requirements)
+  metrics$harmonization_statuses <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Vocab harmonization status:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Vocab harmonization status: (\\w+) - ")[, 2],
+      status = stringr::str_match(name, "Vocab harmonization status: \\w+ - (.+)")[, 2],
+      count = value_as_number
+    ) |>
+    dplyr::filter(!stringr::str_detect(tolower(status), "domain check")) |>
+    dplyr::select(table_name, status, count)
+
+  # Parse vocab harmonization same-table mappings
+  metrics$same_table_mappings <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Vocab harmonization same-table mapping:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Vocab harmonization same-table mapping: (\\w+) - ")[, 2],
+      mapping = stringr::str_match(name, "Vocab harmonization same-table mapping: \\w+ - (\\d+):(\\d+)")[, 1],
+      source_multiplier = as.numeric(stringr::str_match(name, "Vocab harmonization same-table mapping: \\w+ - (\\d+):(\\d+)")[, 2]),
+      target_multiplier = as.numeric(stringr::str_match(name, "Vocab harmonization same-table mapping: \\w+ - (\\d+):(\\d+)")[, 3]),
+      total_rows = value_as_number,
+      rows_added = total_rows * ((target_multiplier - 1) / target_multiplier)
+    ) |>
+    dplyr::select(table_name, mapping, source_multiplier, target_multiplier, total_rows, rows_added)
+
+  # Parse vocab harmonization row dispositions
+  metrics$row_dispositions <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Vocab harmonization row disposition:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Vocab harmonization row disposition: (\\w+) - ")[, 2],
+      disposition = stringr::str_match(name, "Vocab harmonization row disposition: \\w+ - (.+)")[, 2],
+      count = value_as_number
+    ) |>
+    dplyr::select(table_name, disposition, count)
+
+  # Parse missing person_id metrics
+  metrics$missing_person_id <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "Number of rows removed due to missing person_id values:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Number of rows removed due to missing person_id values: (\\w+)")[, 2],
+      count = value_as_number
+    ) |>
+    dplyr::select(table_name, count)
+
+  # Parse person_id referential integrity violations
+  metrics$referential_integrity_violations <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Person_id referential integrity violation count:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Person_id referential integrity violation count: (\\w+)")[, 2],
+      count = value_as_number
+    ) |>
+    dplyr::select(table_name, count)
+
+  # Parse default date value counts
+  metrics$default_date_values <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Date/datetime default value count:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Date/datetime default value count: (\\w+)\\.")[, 2],
+      column_name = stringr::str_match(name, "Date/datetime default value count: \\w+\\.(\\w+)")[, 2],
+      count = value_as_number
+    ) |>
+    dplyr::select(table_name, column_name, count)
+
+  # Parse invalid concept_id counts
+  metrics$invalid_concepts <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Invalid concept_id count:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Invalid concept_id count: (\\w+)\\.")[, 2],
+      column_name = stringr::str_match(name, "Invalid concept_id count: \\w+\\.(\\w+)")[, 2],
+      count = value_as_number
+    ) |>
+    dplyr::filter(!stringr::str_detect(column_name, "_source_concept_id$")) |>
+    dplyr::select(table_name, column_name, count)
+
+  # Parse missing columns
+  metrics$missing_columns <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Missing column:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Missing column: (\\w+)\\.")[, 2],
+      column_name = stringr::str_match(name, "Missing column: \\w+\\.(\\w+)")[, 2]
+    ) |>
+    dplyr::select(table_name, column_name)
+
+  # Parse technical metadata
+  delivery_date_raw <- delivery_data |> dplyr::filter(name == "Delivery date") |> dplyr::pull(value_as_string)
+  delivery_date_formatted <- tryCatch({
+    date_obj <- as.Date(delivery_date_raw, format = "%m/%d/%y")
+    if (is.na(date_obj)) {
+      date_obj <- as.Date(delivery_date_raw, format = "%Y-%m-%d")
+    }
+    format(date_obj, "%Y-%m-%d")
+  }, error = function(e) {
+    delivery_date_raw
+  })
+
+  processing_date_raw <- delivery_data |> dplyr::filter(name == "Delivery processing date") |> dplyr::pull(value_as_string)
+  processing_date_formatted <- tryCatch({
+    date_obj <- as.Date(processing_date_raw, format = "%m/%d/%y")
+    if (is.na(date_obj)) {
+      date_obj <- as.Date(processing_date_raw, format = "%Y-%m-%d")
+    }
+    format(date_obj, "%Y-%m-%d")
+  }, error = function(e) {
+    processing_date_raw
+  })
+
+  metrics$metadata <- list(
+    site = delivery_data |> dplyr::filter(name == "Site") |> dplyr::pull(value_as_string),
+    delivery_date = delivery_date_formatted,
+    processing_date = processing_date_formatted,
+    delivered_cdm_version = delivery_data |> dplyr::filter(name == "Delivered CDM version") |> dplyr::pull(value_as_string),
+    delivered_vocab_version = delivery_data |> dplyr::filter(name == "Delivered vocabulary version") |> dplyr::pull(value_as_string),
+    standardized_cdm_version = delivery_data |> dplyr::filter(name == "Standardized to CDM version") |> dplyr::pull(value_as_string),
+    standardized_vocab_version = delivery_data |> dplyr::filter(name == "Standardized to vocabulary version") |> dplyr::pull(value_as_string),
+    pipeline_version = delivery_data |> dplyr::filter(name == "Pipeline file processor version") |> dplyr::pull(value_as_string),
+    file_format = delivery_data |> dplyr::filter(name == "File delivery format") |> dplyr::pull(value_as_string)
+  )
+
+  metrics$missing_person_id_count <- delivery_data |>
+    dplyr::filter(name == "Number of persons with missing person_id") |>
+    dplyr::pull(value_as_number)
+
+  if (length(metrics$missing_person_id_count) == 0) {
+    metrics$missing_person_id_count <- 0
+  }
+
+  # Parse time series row counts
+  metrics$time_series <- delivery_data |>
+    dplyr::filter(stringr::str_detect(name, "^Time series row count:")) |>
+    dplyr::mutate(
+      table_name = stringr::str_match(name, "Time series row count: (\\w+)\\.(\\d+)")[, 2],
+      year = as.integer(stringr::str_match(name, "Time series row count: (\\w+)\\.(\\d+)")[, 3]),
+      count = value_as_number
+    ) |>
+    dplyr::select(table_name, year, count) |>
+    dplyr::arrange(table_name, year)
+
+  return(metrics)
+}
+
+#' Apply type concept grouping rules
+#'
+#' Categorizes OMOP type concepts into broader groups (EHR, Claims, Disease registry,
+#' Patient reported, Unlabeled, Other) based on naming patterns.
+#'
+#' @param type_concepts Data frame with type_concept column
+#' @return Data frame with added type_group column
+group_type_concepts <- function(type_concepts) {
+
+  type_concepts |>
+    dplyr::mutate(
+      type_group = dplyr::case_when(
+        # Unlabeled group
+        is.na(type_concept) |
+          type_concept == "" |
+          type_concept == "0" |
+          tolower(type_concept) == "no matching concept" ~ "Unlabeled",
+        # EHR group (case-sensitive)
+        stringr::str_detect(type_concept, "EHR") ~ "EHR",
+        # Claims group (case-insensitive)
+        stringr::str_detect(tolower(type_concept), "claim") ~ "Claims",
+        stringr::str_detect(tolower(type_concept), "payer system record") ~ "Claims",
+        # Disease registry group
+        type_concept %in% c("Registry", "Tumor Registry") ~ "Disease registry",
+        # Patient reported group
+        type_concept %in% c("Patient self-report", "Patient self-tested",
+                            "Patient filled survey", "Survey",
+                            "Patient Self-Reported Medication") ~ "Patient reported",
+        # Other
+        TRUE ~ "Other"
+      )
+    )
+}
+
+# ==============================================================================
+# Data Transformation
+# ==============================================================================
+
 #' Extract count for a table from metrics
 #'
 #' Helper to safely extract a count value from a metric data frame.
@@ -14,8 +310,8 @@
 get_table_count <- function(metric_df, table_name) {
   if (is.null(metric_df) || nrow(metric_df) == 0) return(0)
 
-  value <- metric_df %>%
-    dplyr::filter(table_name == !!table_name) %>%
+  value <- metric_df |>
+    dplyr::filter(table_name == !!table_name) |>
     dplyr::pull(count)
 
   ifelse(length(value) > 0, value[1], 0)
@@ -31,9 +327,9 @@ get_table_count <- function(metric_df, table_name) {
 get_table_count_sum <- function(metric_df, table_name) {
   if (is.null(metric_df) || nrow(metric_df) == 0) return(0)
 
-  total <- metric_df %>%
-    dplyr::filter(table_name == !!table_name) %>%
-    dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
+  total <- metric_df |>
+    dplyr::filter(table_name == !!table_name) |>
+    dplyr::summarise(total = sum(count, na.rm = TRUE)) |>
     dplyr::pull(total)
 
   ifelse(length(total) > 0, total[1], 0)
@@ -72,20 +368,29 @@ prepare_table_data <- function(table_name, metrics, dqd_score) {
   quality_issues <- calculate_quality_issues(invalid_rows, missing_rows)
 
   # Vocabulary harmonization metrics
-  same_table_result_rows <- get_table_count_sum(metrics$same_table_mappings, table_name)
+  # Note: same_table_mappings uses 'total_rows' not 'count'
+  same_table_result_rows <- if (is.null(metrics$same_table_mappings) || nrow(metrics$same_table_mappings) == 0) {
+    0
+  } else {
+    total <- metrics$same_table_mappings |>
+      dplyr::filter(table_name == !!table_name) |>
+      dplyr::summarise(total = sum(total_rows, na.rm = TRUE)) |>
+      dplyr::pull(total)
+    ifelse(length(total) > 0, total[1], 0)
+  }
 
-  transitions <- metrics$table_transitions %>%
+  transitions <- metrics$table_transitions |>
     dplyr::filter(source_table == !!table_name | target_table == !!table_name)
 
-  transitions_in <- transitions %>%
-    dplyr::filter(target_table == !!table_name, source_table != !!table_name) %>%
-    dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
+  transitions_in <- transitions |>
+    dplyr::filter(target_table == !!table_name, source_table != !!table_name) |>
+    dplyr::summarise(total = sum(count, na.rm = TRUE)) |>
     dplyr::pull(total)
   transitions_in <- ifelse(length(transitions_in) > 0, transitions_in[1], 0)
 
-  rows_out <- transitions %>%
-    dplyr::filter(source_table == !!table_name, target_table != !!table_name) %>%
-    dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
+  rows_out <- transitions |>
+    dplyr::filter(source_table == !!table_name, target_table != !!table_name) |>
+    dplyr::summarise(total = sum(count, na.rm = TRUE)) |>
     dplyr::pull(total)
   rows_out <- ifelse(length(rows_out) > 0, rows_out[1], 0)
 
@@ -105,43 +410,43 @@ prepare_table_data <- function(table_name, metrics, dqd_score) {
   invalid_rows_percent <- calculate_percentage(invalid_rows, initial_rows)
 
   # Extract related data
-  type_concepts <- metrics$type_concepts_grouped %>%
-    dplyr::filter(table_name == !!table_name) %>%
-    dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) %>%
-    dplyr::arrange(type_group, desc(count)) %>%
+  type_concepts <- metrics$type_concepts_grouped |>
+    dplyr::filter(table_name == !!table_name) |>
+    dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) |>
+    dplyr::arrange(type_group, desc(count)) |>
     dplyr::mutate(type_group = as.character(type_group))
 
-  invalid_columns <- metrics$invalid_columns %>%
-    dplyr::filter(table_name == !!table_name) %>%
+  invalid_columns <- metrics$invalid_columns |>
+    dplyr::filter(table_name == !!table_name) |>
     dplyr::pull(column_name)
   invalid_columns <- if (length(invalid_columns) == 0) list() else as.list(invalid_columns)
 
-  missing_columns <- metrics$missing_columns %>%
-    dplyr::filter(table_name == !!table_name) %>%
+  missing_columns <- metrics$missing_columns |>
+    dplyr::filter(table_name == !!table_name) |>
     dplyr::pull(column_name)
   missing_columns <- if (length(missing_columns) == 0) list() else as.list(missing_columns)
 
-  source_vocab <- metrics$source_vocabularies %>%
+  source_vocab <- metrics$source_vocabularies |>
     dplyr::filter(table_name == !!table_name)
 
-  target_vocab <- metrics$target_vocabularies %>%
+  target_vocab <- metrics$target_vocabularies |>
     dplyr::filter(table_name == !!table_name)
 
-  harmonization_statuses <- metrics$harmonization_statuses %>%
+  harmonization_statuses <- metrics$harmonization_statuses |>
     dplyr::filter(table_name == !!table_name)
 
-  dispositions <- metrics$row_dispositions %>%
+  dispositions <- metrics$row_dispositions |>
     dplyr::filter(table_name == !!table_name)
 
-  same_table_mappings <- metrics$same_table_mappings %>%
+  same_table_mappings <- metrics$same_table_mappings |>
     dplyr::filter(table_name == !!table_name)
 
   # Delivery status
   delivered <- table_name %in% metrics$valid_tables$table_name
 
   # Validation: check if type concepts sum to final rows
-  type_concept_total <- type_concepts %>%
-    dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
+  type_concept_total <- type_concepts |>
+    dplyr::summarise(total = sum(count, na.rm = TRUE)) |>
     dplyr::pull(total)
   type_concept_total <- ifelse(length(type_concept_total) > 0, type_concept_total[1], 0)
 
@@ -231,7 +536,7 @@ prepare_all_table_data <- function(metrics, table_dqd_scores) {
 #' @return Data frame with type concept summary
 prepare_group_type_concepts <- function(metrics, group_tables) {
   # Filter to tables in this group
-  group_type_concepts <- metrics$type_concepts_grouped %>%
+  group_type_concepts <- metrics$type_concepts_grouped |>
     dplyr::filter(table_name %in% group_tables)
 
   if (nrow(group_type_concepts) == 0) {
@@ -243,18 +548,18 @@ prepare_group_type_concepts <- function(metrics, group_tables) {
   }
 
   # Aggregate by type group
-  summary <- group_type_concepts %>%
-    dplyr::group_by(type_group) %>%
+  summary <- group_type_concepts |>
+    dplyr::group_by(type_group) |>
     dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop")
 
   # Calculate percentages
   total <- sum(summary$count, na.rm = TRUE)
-  summary <- summary %>%
+  summary <- summary |>
     dplyr::mutate(
       percent = if (total > 0) (count / total) * 100 else 0
-    ) %>%
-    dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) %>%
-    dplyr::arrange(type_group) %>%
+    ) |>
+    dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) |>
+    dplyr::arrange(type_group) |>
     dplyr::mutate(type_group = as.character(type_group))
 
   return(summary)
@@ -269,7 +574,7 @@ prepare_group_type_concepts <- function(metrics, group_tables) {
 #' @return List with transition statistics
 prepare_group_transitions <- function(metrics, group_tables) {
   # Filter to transitions involving tables in this group
-  group_transitions <- metrics$table_transitions %>%
+  group_transitions <- metrics$table_transitions |>
     dplyr::filter(source_table %in% group_tables | target_table %in% group_tables)
 
   if (nrow(group_transitions) == 0) {
@@ -284,11 +589,11 @@ prepare_group_transitions <- function(metrics, group_tables) {
   # Calculate transition statistics
   total_rows <- sum(group_transitions$count, na.rm = TRUE)
 
-  same_table_transitions <- group_transitions %>%
+  same_table_transitions <- group_transitions |>
     dplyr::filter(source_table == target_table)
   same_table_count <- sum(same_table_transitions$count, na.rm = TRUE)
 
-  cross_table_transitions <- group_transitions %>%
+  cross_table_transitions <- group_transitions |>
     dplyr::filter(source_table != target_table)
   cross_table_count <- sum(cross_table_transitions$count, na.rm = TRUE)
 
@@ -339,18 +644,18 @@ prepare_overall_type_concepts <- function(metrics) {
   }
 
   # Aggregate across all tables
-  summary <- metrics$type_concepts_grouped %>%
-    dplyr::group_by(type_group) %>%
+  summary <- metrics$type_concepts_grouped |>
+    dplyr::group_by(type_group) |>
     dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop")
 
   # Calculate percentages
   total <- sum(summary$count, na.rm = TRUE)
-  summary <- summary %>%
+  summary <- summary |>
     dplyr::mutate(
       percent = if (total > 0) (count / total) * 100 else 0
-    ) %>%
-    dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) %>%
-    dplyr::arrange(type_group) %>%
+    ) |>
+    dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) |>
+    dplyr::arrange(type_group) |>
     dplyr::mutate(type_group = as.character(type_group))
 
   return(summary)
@@ -371,15 +676,15 @@ prepare_overall_transitions <- function(metrics) {
 
   total_rows <- sum(metrics$table_transitions$count, na.rm = TRUE)
 
-  same_table_count <- metrics$table_transitions %>%
-    dplyr::filter(source_table == target_table) %>%
-    dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
+  same_table_count <- metrics$table_transitions |>
+    dplyr::filter(source_table == target_table) |>
+    dplyr::summarise(total = sum(count, na.rm = TRUE)) |>
     dplyr::pull(total)
   same_table_count <- ifelse(length(same_table_count) > 0, same_table_count[1], 0)
 
-  cross_table_count <- metrics$table_transitions %>%
-    dplyr::filter(source_table != target_table) %>%
-    dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
+  cross_table_count <- metrics$table_transitions |>
+    dplyr::filter(source_table != target_table) |>
+    dplyr::summarise(total = sum(count, na.rm = TRUE)) |>
     dplyr::pull(total)
   cross_table_count <- ifelse(length(cross_table_count) > 0, cross_table_count[1], 0)
 
@@ -449,30 +754,30 @@ ensure_all_type_groups <- function(type_concept_data, config = default_config())
   )
 
   # Merge with actual data, keeping all groups
-  result <- complete_groups %>%
+  result <- complete_groups |>
     dplyr::left_join(
-      type_concept_data %>% dplyr::select(type_group, count),
+      type_concept_data |> dplyr::select(type_group, count),
       by = "type_group",
       suffix = c("_template", "_actual")
-    ) %>%
+    ) |>
     dplyr::mutate(
       count = dplyr::coalesce(count_actual, count_template)
-    ) %>%
+    ) |>
     dplyr::select(-count_template, -count_actual)
 
   # If original data had additional columns, merge them back
   extra_cols <- setdiff(names(type_concept_data), c("type_group", "count"))
   if (length(extra_cols) > 0) {
-    result <- result %>%
+    result <- result |>
       dplyr::left_join(
-        type_concept_data %>% dplyr::select(type_group, dplyr::all_of(extra_cols)),
+        type_concept_data |> dplyr::select(type_group, dplyr::all_of(extra_cols)),
         by = "type_group"
       )
   }
 
   # Ensure proper ordering
-  result %>%
-    dplyr::mutate(type_group = factor(type_group, levels = all_groups)) %>%
-    dplyr::arrange(type_group) %>%
+  result |>
+    dplyr::mutate(type_group = factor(type_group, levels = all_groups)) |>
+    dplyr::arrange(type_group) |>
     dplyr::mutate(type_group = as.character(type_group))
 }

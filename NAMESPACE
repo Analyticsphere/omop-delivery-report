@@ -2,7 +2,6 @@
 
 export(default_config)
 export(generate_full_omop_report)
-export(generate_full_omop_report_refactored)
 export(load_delivery_data)
 export(load_dqd_data)
 export(merge_config)

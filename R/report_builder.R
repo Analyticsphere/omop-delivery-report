@@ -43,11 +43,11 @@ build_complete_html_report <- function(metrics, dqd_data, dqd_scores, table_grou
 
   dqd_grid_html <- build_dqd_grid_section(dqd_scores, has_dqd_data)
 
-  time_series_html <- build_time_series_section_for_report(metrics, has_delivery_data)
+  time_series_html <- build_time_series_section(metrics, has_delivery_data)
 
-  delivery_report_html <- build_delivery_report_section_for_report(metrics, table_groups, group_dqd_scores, table_dqd_scores, num_participants, has_delivery_data)
+  delivery_report_html <- build_delivery_report_section(metrics, table_groups, group_dqd_scores, has_delivery_data, has_dqd_data)
 
-  vocab_harm_html <- build_vocab_harmonization_section_for_report(metrics, has_delivery_data)
+  vocab_harm_html <- build_vocabulary_harmonization_section(metrics, has_delivery_data)
 
   drilldown_html <- render_template("sections/drilldown")
 
@@ -268,13 +268,13 @@ generate_dqd_grid_rows <- function(grid) {
   if (nrow(grid) == 0) return('<tr><td colspan="13">No DQD data available</td></tr>')
 
   # Reshape for display
-  grid_wide <- grid %>%
+  grid_wide <- grid |>
     tidyr::pivot_wider(names_from = context, values_from = c(Pass, Fail, Total, `% Pass`))
 
   categories <- c("Plausibility", "Conformance", "Completeness", "Total")
 
   rows <- sapply(categories, function(cat_name) {
-    row_data <- grid_wide %>% dplyr::filter(category == cat_name)
+    row_data <- grid_wide |> dplyr::filter(category == cat_name)
 
     if (nrow(row_data) == 0) return("")
 
@@ -316,25 +316,5 @@ generate_dqd_grid_rows <- function(grid) {
   paste(rows, collapse = "\n")
 }
 
-# Time series, delivery report, and vocab harmonization sections...
-# (These are complex and would benefit from remaining as R functions for now)
-# We can template-ize their structures further in a follow-up refactor.
-
-#' Build time series section (uses html_builders.R)
-build_time_series_section_for_report <- function(metrics, has_delivery_data) {
-  # Call html_builders.R::build_time_series_section
-  build_time_series_section(metrics, has_delivery_data)
-}
-
-#' Build delivery report section (uses html_builders.R)
-build_delivery_report_section_for_report <- function(metrics, table_groups, group_dqd_scores, table_dqd_scores, num_participants, has_delivery_data) {
-  # Call html_builders.R::build_delivery_report_section
-  # Note: html_builders version takes has_dqd_data as last param, we'll pass TRUE for now
-  build_delivery_report_section(metrics, table_groups, group_dqd_scores, has_delivery_data, TRUE)
-}
-
-#' Build vocab harmonization section (uses html_builders.R)
-build_vocab_harmonization_section_for_report <- function(metrics, has_delivery_data) {
-  # Call html_builders.R::build_vocabulary_harmonization_section
-  build_vocabulary_harmonization_section(metrics, has_delivery_data)
-}
+# Note: Time series, delivery report, and vocab harmonization sections
+# use html_builders.R functions directly for building complex HTML structures.
