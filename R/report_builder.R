@@ -26,8 +26,11 @@ build_complete_html_report <- function(metrics, dqd_data, dqd_scores, table_grou
   num_participants <- if (has_delivery_data) calculate_num_participants(metrics) else 0
   total_rows_removed <- if (has_delivery_data) calculate_total_rows_removed(metrics) else 0
 
-  # Build JSON data for JavaScript
-  report_data_json <- build_report_data_json(metrics, dqd_data, table_groups, group_dqd_scores, table_dqd_scores)
+  # Prepare report data (all business logic calculations)
+  report_data <- prepare_report_data(metrics, table_groups, group_dqd_scores, table_dqd_scores)
+
+  # Serialize to JSON for JavaScript
+  report_data_json <- build_report_data_json(report_data)
 
   # Build sections
   sidebar_html <- render_template("sections/sidebar", list(

@@ -6,159 +6,18 @@
 
 #' Build complete JSON data object for JavaScript
 #'
-#' Creates the REPORT_DATA global object that JavaScript uses for all
-#' interactive features (drilldowns, charts, etc.).
+#' Serializes pre-calculated report data to JSON format for JavaScript consumption.
+#' This is a pure serialization function - all business logic should be done
+#' in prepare_report_data() before calling this function.
 #'
-#' @param metrics List of metric data frames
-#' @param dqd_data Data frame with DQD results
-#' @param table_groups Named list of table groups
-#' @param group_dqd_scores Named list of DQD scores per group
-#' @param table_dqd_scores Named list of DQD scores per table
+#' @param report_data List of pre-calculated report data from prepare_report_data()
 #' @return Character JSON string
-build_report_data_json <- function(metrics, dqd_data, table_groups, group_dqd_scores, table_dqd_scores) {
+build_report_data_json <- function(report_data) {
 
-  # Prepare group-level data
-  groups_data <- list()
-
-  for (group_name in names(table_groups)) {
-    group_tables <- table_groups[[group_name]]
-
-    # Get data for each table in group
-    table_data_list <- lapply(group_tables, function(tbl) {
-      prepare_table_data(tbl, metrics, table_dqd_scores[[tbl]])
-    })
-    names(table_data_list) <- group_tables
-
-    # Group-level vocabularies
-    group_source_vocab <- metrics$source_vocabularies |>
-      dplyr::filter(table_name %in% group_tables) |>
-      dplyr::group_by(vocabulary) |>
-      dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
-      dplyr::arrange(desc(count))
-
-    group_target_vocab <- metrics$target_vocabularies |>
-      dplyr::filter(table_name %in% group_tables) |>
-      dplyr::group_by(vocabulary) |>
-      dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
-      dplyr::arrange(desc(count))
-
-    # Group-level transitions
-    group_transitions <- metrics$table_transitions |>
-      dplyr::filter(source_table %in% group_tables | target_table %in% group_tables)
-
-    # Group-level type concepts - DETAILED (with type_concept field)
-    group_type_concepts_detailed <- metrics$type_concepts_grouped |>
-      dplyr::filter(table_name %in% group_tables) |>
-      dplyr::group_by(type_group, type_concept) |>
-      dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop")
-
-    # Aggregate by type_group only and ensure all groups present - SUMMARY
-    group_type_concepts_summary <- group_type_concepts_detailed |>
-      dplyr::group_by(type_group) |>
-      dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
-      ensure_all_type_groups()
-
-    # Add percentages to summary
-    total_type_concept_count <- sum(group_type_concepts_summary$count, na.rm = TRUE)
-    group_type_concepts_summary <- group_type_concepts_summary |>
-      dplyr::mutate(
-        percent = if (total_type_concept_count > 0) (count / total_type_concept_count) * 100 else 0
-      )
-
-    # Order detailed type concepts by canonical group, then count descending
-    group_type_concepts <- group_type_concepts_detailed |>
-      dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) |>
-      dplyr::arrange(type_group, desc(count)) |>
-      dplyr::mutate(type_group = as.character(type_group))
-
-    # Calculate transition statistics for this group
-    total_transition_rows <- sum(group_transitions$count, na.rm = TRUE)
-    same_table_transitions <- group_transitions |>
-      dplyr::filter(source_table == target_table)
-    cross_table_transitions <- group_transitions |>
-      dplyr::filter(source_table != target_table)
-    same_table_count <- sum(same_table_transitions$count, na.rm = TRUE)
-    cross_table_count <- sum(cross_table_transitions$count, na.rm = TRUE)
-
-    groups_data[[group_name]] <- list(
-      tables = table_data_list,
-      dqd_score = group_dqd_scores[[group_name]],
-      source_vocabularies = group_source_vocab,
-      target_vocabularies = group_target_vocab,
-      transitions = group_transitions,
-      transition_stats = list(
-        total_rows = total_transition_rows,
-        same_table_count = same_table_count,
-        cross_table_count = cross_table_count
-      ),
-      type_concepts = group_type_concepts,
-      type_concepts_summary = group_type_concepts_summary
-    )
-  }
-
-  # Add overall transitions for vocabulary harmonization section
-  overall_transitions <- metrics$table_transitions
-
-  # Add overall harmonization statuses (summarize across all tables)
-  overall_harmonization_statuses <- metrics$harmonization_statuses |>
-    dplyr::group_by(status) |>
-    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
-    dplyr::arrange(desc(count))
-
-  # Add overall type concepts - DETAILED (with type_concept field)
-  overall_type_concepts_detailed <- metrics$type_concepts_grouped |>
-    dplyr::group_by(type_group, type_concept) |>
-    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop")
-
-  # Aggregate by type_group only and ensure all groups present - SUMMARY
-  overall_type_concepts_summary <- overall_type_concepts_detailed |>
-    dplyr::group_by(type_group) |>
-    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
-    ensure_all_type_groups()
-
-  # Add percentages to overall summary
-  total_overall_count <- sum(overall_type_concepts_summary$count, na.rm = TRUE)
-  overall_type_concepts_summary <- overall_type_concepts_summary |>
-    dplyr::mutate(
-      percent = if (total_overall_count > 0) (count / total_overall_count) * 100 else 0
-    )
-
-  # Order detailed type concepts by canonical group, then count descending
-  overall_type_concepts <- overall_type_concepts_detailed |>
-    dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) |>
-    dplyr::arrange(type_group, desc(count)) |>
-    dplyr::mutate(type_group = as.character(type_group))
-
-  # Calculate overall transition statistics
-  total_overall_transition_rows <- sum(overall_transitions$count, na.rm = TRUE)
-  overall_same_table_transitions <- overall_transitions |>
-    dplyr::filter(source_table == target_table)
-  overall_cross_table_transitions <- overall_transitions |>
-    dplyr::filter(source_table != target_table)
-  overall_same_table_count <- sum(overall_same_table_transitions$count, na.rm = TRUE)
-  overall_cross_table_count <- sum(overall_cross_table_transitions$count, na.rm = TRUE)
-
-  # Calculate total initial dataset size (for harmonization context)
-  total_initial_rows <- sum(metrics$valid_row_counts$count, na.rm = TRUE) +
-                        sum(metrics$invalid_row_counts$count, na.rm = TRUE)
-
-  # Build the complete data structure
-  report_data <- list(
-    groups = groups_data,
-    type_colors = as.list(get_type_concept_colors()),
-    table_colors = as.list(get_table_colors()),
-    type_group_order = get_type_concept_group_order(),
-    overall_transitions = overall_transitions,
-    overall_transition_stats = list(
-      total_rows = total_overall_transition_rows,
-      same_table_count = overall_same_table_count,
-      cross_table_count = overall_cross_table_count
-    ),
-    harmonization_statuses = overall_harmonization_statuses,
-    total_initial_rows = total_initial_rows,
-    overall_type_concepts = overall_type_concepts,
-    overall_type_concepts_summary = overall_type_concepts_summary
-  )
+  # Add configuration data (colors, ordering)
+  report_data$type_colors <- as.list(get_type_concept_colors())
+  report_data$table_colors <- as.list(get_table_colors())
+  report_data$type_group_order <- get_type_concept_group_order()
 
   # Serialize to JSON
   json_string <- jsonlite::toJSON(
@@ -216,28 +75,23 @@ build_table_rows_data <- function(group_tables, all_table_data, num_participants
   })
 }
 
-#' Build vocabulary table rows for top source/target vocabularies
+#' Format vocabulary table rows for display
 #'
-#' @param vocab_data Data frame with vocabulary and count columns
-#' @param top_n Integer number of top vocabularies to include (default: 10)
-#' @return List of vocabulary rows
-build_vocab_table_rows <- function(vocab_data, top_n = 10) {
+#' Formats pre-aggregated vocabulary data for display.
+#' Aggregation logic should be done in data preparation functions.
+#'
+#' @param vocab_data Data frame with vocabulary and count columns (already aggregated)
+#' @return List of vocabulary rows formatted for display
+build_vocab_table_rows <- function(vocab_data) {
   if (is.null(vocab_data) || nrow(vocab_data) == 0) {
     return(list(list(vocabulary = "No data", count = "0")))
   }
 
-  # Aggregate and get top N
-  top_vocabs <- vocab_data |>
-    dplyr::group_by(vocabulary) |>
-    dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
-    dplyr::arrange(desc(count)) |>
-    head(top_n)
-
-  # Format for display
-  lapply(1:nrow(top_vocabs), function(i) {
+  # Format for display (no business logic, just formatting)
+  lapply(1:nrow(vocab_data), function(i) {
     list(
-      vocabulary = top_vocabs$vocabulary[i],
-      count = format_number(top_vocabs$count[i])
+      vocabulary = vocab_data$vocabulary[i],
+      count = format_number(vocab_data$count[i])
     )
   })
 }
