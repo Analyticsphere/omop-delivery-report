@@ -57,8 +57,8 @@ substitute_variables <- function(template, data) {
     }
 
     # Replace all occurrences of {{key}}
-    pattern <- paste0("\\{\\{", key, "\\}\\}")
-    result <- gsub(pattern, value_str, result)
+    pattern <- paste0("{{", key, "}}")
+    result <- gsub(pattern, value_str, result, fixed = TRUE)
   }
 
   return(result)
