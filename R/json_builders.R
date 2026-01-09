@@ -138,6 +138,10 @@ build_report_data_json <- function(metrics, dqd_data, table_groups, group_dqd_sc
   overall_same_table_count <- sum(overall_same_table_transitions$count, na.rm = TRUE)
   overall_cross_table_count <- sum(overall_cross_table_transitions$count, na.rm = TRUE)
 
+  # Calculate total initial dataset size (for harmonization context)
+  total_initial_rows <- sum(metrics$valid_row_counts$count, na.rm = TRUE) +
+                        sum(metrics$invalid_row_counts$count, na.rm = TRUE)
+
   # Build the complete data structure
   report_data <- list(
     groups = groups_data,
@@ -151,6 +155,7 @@ build_report_data_json <- function(metrics, dqd_data, table_groups, group_dqd_sc
       cross_table_count = overall_cross_table_count
     ),
     harmonization_statuses = overall_harmonization_statuses,
+    total_initial_rows = total_initial_rows,
     overall_type_concepts = overall_type_concepts,
     overall_type_concepts_summary = overall_type_concepts_summary
   )

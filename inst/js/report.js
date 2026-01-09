@@ -604,9 +604,13 @@ function buildTableDrilldownContent(tableData) {
         `;
       });
 
+      // Calculate harmonization impact as percentage of table's initial rows
+      const tableInitialRows = tableData.initial_rows || 0;
+      const tableHarmonizationPercent = tableInitialRows > 0 ? Math.round((totalStatusRows / tableInitialRows) * 100) : 0;
+
       html += `
           </div>
-          <p style="margin-top: 15px; margin-bottom: 0;"><strong>Total Records Harmonized:</strong> ${formatNumber(totalStatusRows)}</p>
+          <p style="margin-top: 15px; margin-bottom: 0;"><strong>Total Records Harmonized:</strong> ${formatNumber(totalStatusRows)} out of ${formatNumber(tableInitialRows)} (${tableHarmonizationPercent}% of table's initial rows)</p>
         </div>
       `;
     }
@@ -804,7 +808,14 @@ function buildVocabHarmonizationContent(transitions) {
     });
 
     html += "</div>";
-    html += "<p style=\"margin-top: 15px; margin-bottom: 0;\"><strong>Total Records Harmonized:</strong> " + formatNumber(totalStatusRows) + "</p>";
+
+    // Calculate harmonization impact as percentage of original dataset
+    const totalInitial = REPORT_DATA.total_initial_rows || 0;
+    const harmonizationPercent = totalInitial > 0 ? Math.round((totalStatusRows / totalInitial) * 100) : 0;
+
+    html += "<p style=\"margin-top: 15px; margin-bottom: 0;\"><strong>Total Records Harmonized:</strong> " +
+            formatNumber(totalStatusRows) + " out of " + formatNumber(totalInitial) +
+            " (" + harmonizationPercent + "% of original dataset)</p>";
     html += "</div>";
   }
 
