@@ -14,7 +14,7 @@ body {
   color: #1e293b;
   background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
   line-height: 1.6;
-  font-size: 15px;
+  font-size: clamp(14px, 0.8vw + 6px, 16px);
   font-weight: 400;
 }
 
@@ -35,12 +35,13 @@ body {
   min-height: 100vh;
 }
 
-/* Fixed Left Sidebar */
+/* Fixed Left Sidebar - Responsive width */
 .sidebar {
   position: fixed;
   left: 0;
   top: 0;
-  width: 220px;
+  /* Fluid width: scales from 180px to 220px */
+  width: clamp(180px, 15vw, 220px);
   height: 100vh;
   background: #0f172a;
   color: white;
@@ -50,12 +51,14 @@ body {
 }
 
 .sidebar-header {
-  padding: 40px 24px 32px;
+  /* Fluid padding: scales from 24px to 40px */
+  padding: clamp(24px, 3vw, 40px) clamp(16px, 2vw, 24px) clamp(20px, 2.5vw, 32px);
   border-bottom: 1px solid #1e293b;
 }
 
 .sidebar-header h1 {
-  font-size: 1.3em;
+  /* Fluid: scales from ~18px to ~22px */
+  font-size: clamp(1.125rem, 1vw + 0.4rem, 1.375rem);
   font-weight: 700;
   letter-spacing: -0.3px;
   margin-bottom: 8px;
@@ -63,7 +66,7 @@ body {
 }
 
 .sidebar-subtitle {
-  font-size: 0.8em;
+  font-size: clamp(0.7rem, 0.5vw + 0.3rem, 0.85rem);
   opacity: 0.7;
   font-weight: 400;
 }
@@ -97,9 +100,10 @@ body {
   font-weight: 600;
 }
 
-/* Main Content Area */
+/* Main Content Area - Matches sidebar width */
 .main-content {
-  margin-left: 220px;
+  /* Fluid margin: scales with sidebar width from 180px to 220px */
+  margin-left: clamp(180px, 15vw, 220px);
   flex: 1;
   min-height: 100vh;
 }
@@ -108,7 +112,8 @@ body {
 .report-header {
   background: white;
   border-bottom: 1px solid #e5e7eb;
-  padding: 32px 48px;
+  /* Fluid padding: scales from 20px to 48px */
+  padding: clamp(20px, 2.5vw, 32px) clamp(24px, 3vw, 48px);
   margin: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
@@ -121,14 +126,15 @@ body {
 
 .report-header h1 {
   margin: 0;
-  font-size: 1.8em;
+  /* Fluid: scales from ~22px to ~32px across laptop-desktop range */
+  font-size: clamp(1.4rem, 1.5vw + 0.5rem, 2rem);
   font-weight: 700;
   letter-spacing: -0.5px;
   color: #0f172a;
 }
 
 .report-subtitle {
-  font-size: 0.9em;
+  font-size: clamp(0.85rem, 0.6vw + 0.4rem, 1.1rem);
   color: #64748b;
   font-weight: 400;
   margin-top: 4px;
@@ -151,8 +157,9 @@ body {
    ============================================================================ */
 
 .section {
-  padding: 56px 48px;
-  margin: 32px 0;
+  /* Fluid padding: scales from 24px to 56px vertical, 20px to 48px horizontal */
+  padding: clamp(24px, 3vw + 12px, 56px) clamp(20px, 2.5vw + 10px, 48px);
+  margin: clamp(16px, 2vw, 32px) 0;
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -177,7 +184,8 @@ body {
 
 .section-header h2 {
   margin: 0;
-  font-size: 1.5em;
+  /* Fluid: scales from ~20px to ~28px */
+  font-size: clamp(1.25rem, 1.2vw + 0.4rem, 1.75rem);
   font-weight: 700;
   color: #0f172a;
   letter-spacing: -0.3px;
@@ -206,7 +214,8 @@ body {
 }
 
 .subsection h4 {
-  font-size: 1.15em;
+  /* Fluid: scales from ~16px to ~20px */
+  font-size: clamp(1rem, 0.8vw + 0.4rem, 1.25rem);
   color: #0f172a;
   margin-bottom: 12px;
   font-weight: 600;
@@ -233,7 +242,8 @@ body {
 }
 
 .metric-label {
-  font-size: 0.75em;
+  /* Fluid: scales from ~10px to ~12px */
+  font-size: clamp(0.625rem, 0.4vw + 0.3rem, 0.75rem);
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -241,7 +251,8 @@ body {
 }
 
 .metric-value {
-  font-size: 2em;
+  /* Fluid: scales from ~24px to ~36px */
+  font-size: clamp(1.5rem, 1.5vw + 0.5rem, 2.25rem);
   font-weight: 700;
   color: #0f172a;
   line-height: 1;
@@ -260,19 +271,25 @@ body {
 .overview-metrics-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 15px;
-  margin-bottom: 40px;
+  gap: clamp(12px, 1vw, 20px);
+  margin-bottom: clamp(24px, 2.5vw, 40px);
 }
 
 /* Ensure all cards have consistent height */
 .overview-metrics-grid .metric-card {
   display: flex;
   flex-direction: column;
-  min-height: 140px;
+  min-height: clamp(120px, 10vw, 160px);
 }
 
-/* Responsive breakpoints for card stacking */
-@media (max-width: 1400px) {
+/* Responsive breakpoints for card stacking - LAPTOP TO DESKTOP ONLY */
+@media (max-width: 1600px) {
+  .overview-metrics-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1280px) {
   .overview-metrics-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -281,12 +298,6 @@ body {
 @media (max-width: 1024px) {
   .overview-metrics-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .overview-metrics-grid {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -294,12 +305,18 @@ body {
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 15px;
-  margin-bottom: 40px;
+  gap: clamp(12px, 1vw, 20px);
+  margin-bottom: clamp(24px, 2.5vw, 40px);
 }
 
-/* Responsive metrics grid */
-@media (max-width: 1400px) {
+/* Responsive metrics grid - LAPTOP TO DESKTOP ONLY */
+@media (max-width: 1600px) {
+  .metrics-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1280px) {
   .metrics-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -311,18 +328,12 @@ body {
   }
 }
 
-@media (max-width: 640px) {
-  .metrics-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* Quality cards grid - 3-2 layout for 5 cards */
 .quality-cards-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  margin-bottom: 20px;
+  gap: clamp(12px, 1vw, 20px);
+  margin-bottom: clamp(16px, 1.5vw, 24px);
 }
 
 /* Make the last 2 cards span properly on row 2 */
@@ -334,7 +345,7 @@ body {
   grid-column: 2 / 3;
 }
 
-/* Responsive: Stack on smaller screens */
+/* Responsive: Stack on smaller screens - LAPTOP TO DESKTOP ONLY */
 @media (max-width: 1024px) {
   .quality-cards-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -346,17 +357,12 @@ body {
   }
 }
 
-@media (max-width: 640px) {
-  .quality-cards-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 .metric-card {
   background: #f8fafc;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 24px;
+  /* Fluid padding: scales from 16px to 24px */
+  padding: clamp(16px, 1.5vw, 24px);
   transition: all 0.2s ease;
 }
 
@@ -381,7 +387,8 @@ body {
 }
 
 .metric-sublabel {
-  font-size: 0.85em;
+  /* Fluid: scales from ~12px to ~14px */
+  font-size: clamp(0.75rem, 0.5vw + 0.35rem, 0.875rem);
   color: #64748b;
   font-weight: 400;
   margin-top: 4px;
@@ -395,10 +402,12 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 100px;
-  height: 100px;
+  /* Fluid sizing: scales from 80px to 120px */
+  min-width: clamp(80px, 8vw, 120px);
+  height: clamp(80px, 8vw, 120px);
   border-radius: 50%;
-  font-size: 2em;
+  /* Fluid font: scales from ~24px to ~36px */
+  font-size: clamp(1.5rem, 1.8vw + 0.4rem, 2.25rem);
   font-weight: 700;
   color: white;
   font-variant-numeric: tabular-nums;
@@ -620,44 +629,14 @@ tr.clickable:hover {
   background-color: #eff6ff;
 }
 
-/* Responsive table adjustments for smaller screens */
-@media (max-width: 1024px) {
+/* Responsive table adjustments for laptops */
+@media (max-width: 1280px) {
   th {
-    padding: 12px 8px;
-    font-size: 0.75em;
+    padding: clamp(10px, 1vw, 12px) clamp(8px, 0.8vw, 12px);
   }
 
   td {
-    padding: 12px 8px;
-    font-size: 0.9em;
-  }
-
-  .dqd-grid-table th {
-    padding: 12px 6px;
-  }
-
-  .dqd-grid-table td {
-    padding: 10px 6px;
-  }
-}
-
-@media (max-width: 640px) {
-  th {
-    padding: 10px 6px;
-    font-size: 0.7em;
-  }
-
-  td {
-    padding: 10px 6px;
-    font-size: 0.85em;
-  }
-
-  .dqd-grid-table th {
-    padding: 10px 4px;
-  }
-
-  .dqd-grid-table td {
-    padding: 8px 4px;
+    padding: clamp(10px, 1vw, 12px) clamp(8px, 0.8vw, 12px);
   }
 }
 
@@ -837,10 +816,11 @@ tr.row-warning:hover {
 }
 
 .chart-title {
-  font-size: 1.05em;
+  /* Fluid: scales from ~16px to ~20px */
+  font-size: clamp(1rem, 0.8vw + 0.4rem, 1.25rem);
   font-weight: 600;
   color: #0f172a;
-  margin-bottom: 24px;
+  margin-bottom: clamp(16px, 2vw, 24px);
   letter-spacing: -0.2px;
   text-align: left;
 }
@@ -1086,4 +1066,51 @@ tr.row-warning:hover {
 
 .legend-item.inactive .legend-line {
   background-color: #cbd5e1 !important;
+}
+
+/* ============================================================================
+   LAPTOP-FOCUSED RESPONSIVE MEDIA QUERIES
+   These breakpoints optimize for laptop (1024px) to large desktop (2560px+)
+   ============================================================================ */
+
+/* Small Laptops (1024px - 1280px) */
+@media (max-width: 1280px) {
+  .controls {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  select {
+    min-width: 250px;
+  }
+
+  .report-header-content {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+}
+
+/* Very Small Laptops (< 1024px) */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 180px;
+  }
+
+  .main-content {
+    margin-left: 180px;
+  }
+
+  .control-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  select {
+    min-width: 200px;
+    width: 100%;
+  }
+
+  .export-button {
+    width: 100%;
+  }
 }
