@@ -497,7 +497,7 @@ function buildTableDrilldownContent(tableData) {
     html += `
       <div class="subsection">
         <h4 style="margin-bottom: 4px;">Type Concept Breakdown</h4>
-        <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; text-align: center;">${tableData.name}</div>
+        <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; text-align: left;">${tableData.name}</div>
         <div class="chart-container" style="margin-top: 16px;">
           ${buildTypeConceptChart(tableData.type_concepts)}
         </div>

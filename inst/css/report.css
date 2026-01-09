@@ -211,7 +211,7 @@ body {
   margin-bottom: 12px;
   font-weight: 600;
   letter-spacing: -0.2px;
-  text-align: center;
+  text-align: left;
 }
 
 /* ============================================================================
@@ -833,7 +833,7 @@ tr.row-warning:hover {
   background: transparent;
   border: none;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .chart-title {
@@ -842,7 +842,7 @@ tr.row-warning:hover {
   color: #0f172a;
   margin-bottom: 24px;
   letter-spacing: -0.2px;
-  text-align: center;
+  text-align: left;
 }
 
 /* ============================================================================

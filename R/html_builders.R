@@ -166,7 +166,7 @@ build_delivery_overview_section <- function(metrics, dqd_scores, num_participant
 
         <div style="margin-top: 32px;">
             <div class="chart-title" style="margin-bottom: 4px;">Type Concept Breakdown</div>
-            <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; text-align: center;">Dataset-wide</div>
+            <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; text-align: left;">Dataset-wide</div>
             <div class="chart-container" style="margin-top: 16px;">
                 <div id="dataset-type-concepts" class="type-concept-chart">
                     <!-- Dynamically populated by JavaScript -->
@@ -470,7 +470,7 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
 
         <div class="subsection">
             <h4 style="margin-bottom: 4px;">Type Concept Breakdown</h4>
-            <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; text-align: center;">%s</div>
+            <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; text-align: left;">%s</div>
             <div id="group-type-concepts-%s" class="chart-container" style="margin-top: 8px;">
                 <!-- Dynamically populated by JavaScript -->
             </div>
