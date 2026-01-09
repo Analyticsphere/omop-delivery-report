@@ -230,11 +230,11 @@ function buildTableDrilldownContent(tableData) {
 
   let html = "";
 
-  // Calculate quality metrics for warnings
+  // Get pre-computed quality metrics from R
   var defaultDateRows = tableData.default_date_rows || 0;
-  var defaultDatePercent = tableData.final_rows > 0 ? ((defaultDateRows / tableData.final_rows) * 100).toFixed(1) : 0;
+  var defaultDatePercent = (tableData.default_date_percent || 0).toFixed(1);
   var invalidConceptRows = tableData.invalid_concept_rows || 0;
-  var invalidConceptPercent = tableData.final_rows > 0 ? ((invalidConceptRows / tableData.final_rows) * 100).toFixed(1) : 0;
+  var invalidConceptPercent = (tableData.invalid_concept_percent || 0).toFixed(1);
 
   // Build consolidated Data Quality Alerts section
   var qualityWarnings = [];
@@ -364,7 +364,7 @@ function buildTableDrilldownContent(tableData) {
   // Row 1: Rows Without Connect ID | Referential Integrity Violations | Invalid Rows
   // Rows Without Connect ID Card
   var missingClass = tableData.final_rows === 0 ? "neutral" : (tableData.missing_person_id_rows > 0 ? "warning" : "success");
-  var missingPercent = tableData.initial_rows > 0 ? ((tableData.missing_person_id_rows / tableData.initial_rows) * 100).toFixed(1) : 0;
+  var missingPercent = (tableData.missing_person_id_percent || 0).toFixed(1);
   var missingDisplay = tableData.final_rows === 0 ? "N/A" : (formatNumber(tableData.missing_person_id_rows) + ` <span style="font-size: 0.6em; color: #666;">(` + missingPercent + `%)</span>`);
   html += `
     <div class="metric-card ` + missingClass + `">
@@ -377,7 +377,7 @@ function buildTableDrilldownContent(tableData) {
   // Referential Integrity Violations Card
   var refIntegrityViolations = tableData.referential_integrity_violations || 0;
   var refIntegrityClass = tableData.final_rows === 0 ? "neutral" : (refIntegrityViolations > 0 ? "warning" : "success");
-  var refIntegrityPercent = tableData.final_rows > 0 ? ((refIntegrityViolations / tableData.final_rows) * 100).toFixed(1) : 0;
+  var refIntegrityPercent = (tableData.referential_integrity_percent || 0).toFixed(1);
   var refIntegrityDisplay = tableData.final_rows === 0 ? "N/A" : (formatNumber(refIntegrityViolations) + ` <span style="font-size: 0.6em; color: #666;">(` + refIntegrityPercent + `%)</span>`);
   html += `
     <div class="metric-card ` + refIntegrityClass + `">
@@ -389,7 +389,7 @@ function buildTableDrilldownContent(tableData) {
 
   // Invalid Rows Card
   var invalidClass = tableData.final_rows === 0 ? "neutral" : (tableData.invalid_rows > 0 ? "warning" : "success");
-  var invalidPercent = tableData.initial_rows > 0 ? ((tableData.invalid_rows / tableData.initial_rows) * 100).toFixed(1) : 0;
+  var invalidPercent = (tableData.invalid_rows_percent || 0).toFixed(1);
   var invalidDisplay = tableData.final_rows === 0 ? "N/A" : (formatNumber(tableData.invalid_rows) + ` <span style="font-size: 0.6em; color: #666;">(` + invalidPercent + `%)</span>`);
   html += `
     <div class="metric-card ` + invalidClass + `">
@@ -532,24 +532,13 @@ function buildTableDrilldownContent(tableData) {
     </div>
   `;
 
-  // Use actual harmonization data calculated in R (don't recalculate in JavaScript)
+  // Use pre-computed harmonization data from R
   var rowsIn = tableData.transitions_in || 0;
+  var rowsOut = tableData.rows_out || 0;
   var harmonizationNet = tableData.harmonization || 0;
 
-  // Calculate rows sent to other tables from transitions data
-  var rowsOut = 0;
-  if (tableData.transitions && tableData.transitions.length > 0) {
-    tableData.transitions.forEach(function(t) {
-      if (t.source_table === tableData.name && t.target_table !== tableData.name) {
-        rowsOut += t.count;
-      }
-    });
-  }
-
-  // Calculate total rows added from 1:N same-table mappings
-  // The R formula is: harmonization = same_table_result_rows - initial_rows + transitions_in
-  // We can break this down as: harmonization = (rows_added_from_1N - rows_moved_out) + transitions_in
-  // Therefore: rows_added_from_1N = (same_table_result_rows - initial_rows) + rows_moved_out
+  // Calculate rows added from 1:N same-table mappings using pre-computed values
+  // Formula: rows_added_from_1N = (same_table_result_rows - initial_rows) + rows_out
   var same_table_result_rows = tableData.same_table_result_rows || 0;
   var initial_rows = tableData.initial_rows || 0;
   var rowsAddedFromMappings = (same_table_result_rows - initial_rows) + rowsOut;
@@ -818,20 +807,22 @@ function buildVocabHarmonizationContent(transitions) {
     html += "</div>";
   }
 
-  // Calculate table transition statistics
-  const totalRows = transitions.reduce(function(sum, t) { return sum + t.count; }, 0);
-  const sameTableTransitions = transitions.filter(function(t) { return t.source_table === t.target_table; });
-  const crossTableTransitions = transitions.filter(function(t) { return t.source_table !== t.target_table; });
+  // Use pre-computed transition statistics from R
+  const transitionStats = REPORT_DATA.overall_transition_stats;
+  const totalRows = transitionStats.total_rows || 0;
+  const sameTableCount = transitionStats.same_table_count || 0;
+  const crossTableCount = transitionStats.cross_table_count || 0;
 
-  const sameTableCount = sameTableTransitions.reduce(function(sum, t) { return sum + t.count; }, 0);
-  const crossTableCount = crossTableTransitions.reduce(function(sum, t) { return sum + t.count; }, 0);
+  // Calculate percentages for display
+  const sameTablePercent = totalRows > 0 ? Math.round((sameTableCount / totalRows) * 100) : 0;
+  const crossTablePercent = totalRows > 0 ? Math.round((crossTableCount / totalRows) * 100) : 0;
 
   // Build Table Transition Flow section
   html += "<h5 style=\"margin-top: 30px;\">Table Transition Flow</h5>";
   html += "<div class=\"info-box\" style=\"margin-bottom: 20px;\">";
   html += "<p><strong>Total Rows Processed:</strong> " + formatNumber(totalRows) + "</p>";
-  html += "<p><strong>Rows Staying in Same Table:</strong> " + formatNumber(sameTableCount) + " (" + Math.round((sameTableCount / totalRows) * 100) + "%)</p>";
-  html += "<p style=\"margin-bottom: 0;\"><strong>Rows Moving Between Tables:</strong> " + formatNumber(crossTableCount) + " (" + Math.round((crossTableCount / totalRows) * 100) + "%)</p>";
+  html += "<p><strong>Rows Staying in Same Table:</strong> " + formatNumber(sameTableCount) + " (" + sameTablePercent + "%)</p>";
+  html += "<p style=\"margin-bottom: 0;\"><strong>Rows Moving Between Tables:</strong> " + formatNumber(crossTableCount) + " (" + crossTablePercent + "%)</p>";
   html += "</div>";
 
   html += buildSankeyDiagram(transitions);

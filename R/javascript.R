@@ -4,9 +4,7 @@
 
 #' Get complete JavaScript for the report
 #'
-#' This function reads the JavaScript from an external file (js/report.js)
-#' rather than embedding it as a string. This makes the JavaScript much
-#' easier to maintain and edit with proper syntax highlighting.
+#' Reads JavaScript from external file for syntax highlighting and external editing.
 #'
 #' @return Character string containing the full JavaScript code
 get_full_javascript <- function() {

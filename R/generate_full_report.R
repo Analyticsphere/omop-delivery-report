@@ -281,13 +281,27 @@ prepare_report_data_json <- function(metrics, dqd_data, table_groups, group_dqd_
       dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
       ensure_all_type_groups()
 
-    # Order detailed concepts by canonical group order, then count
-    # Note: Don't call ensure_all_type_groups() here because this is detailed data
-    # with type_concept column. JavaScript will aggregate and ensure all groups.
+    # Add percentages to summary
+    total_type_concept_count <- sum(group_type_concepts_summary$count, na.rm = TRUE)
+    group_type_concepts_summary <- group_type_concepts_summary %>%
+      dplyr::mutate(
+        percent = if (total_type_concept_count > 0) (count / total_type_concept_count) * 100 else 0
+      )
+
+    # Order detailed type concepts by canonical group, then count descending
     group_type_concepts <- group_type_concepts_detailed %>%
       dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) %>%
       dplyr::arrange(type_group, desc(count)) %>%
       dplyr::mutate(type_group = as.character(type_group))
+
+    # Calculate transition statistics for this group
+    total_transition_rows <- sum(group_transitions$count, na.rm = TRUE)
+    same_table_transitions <- group_transitions %>%
+      dplyr::filter(source_table == target_table)
+    cross_table_transitions <- group_transitions %>%
+      dplyr::filter(source_table != target_table)
+    same_table_count <- sum(same_table_transitions$count, na.rm = TRUE)
+    cross_table_count <- sum(cross_table_transitions$count, na.rm = TRUE)
 
     group_data[[group_name]] <- list(
       tables = table_data_list,
@@ -295,7 +309,13 @@ prepare_report_data_json <- function(metrics, dqd_data, table_groups, group_dqd_
       source_vocabularies = group_source_vocab,
       target_vocabularies = group_target_vocab,
       transitions = group_transitions,
-      type_concepts = group_type_concepts
+      transition_stats = list(
+        total_rows = total_transition_rows,
+        same_table_count = same_table_count,
+        cross_table_count = cross_table_count
+      ),
+      type_concepts = group_type_concepts,
+      type_concepts_summary = group_type_concepts_summary
     )
   }
 
@@ -319,21 +339,41 @@ prepare_report_data_json <- function(metrics, dqd_data, table_groups, group_dqd_
     dplyr::summarise(count = sum(count, na.rm = TRUE), .groups = "drop") %>%
     ensure_all_type_groups()
 
-  # Order detailed concepts by canonical group order, then count
-  # Note: Don't call ensure_all_type_groups() here because this is detailed data
-  # with type_concept column. JavaScript will aggregate and ensure all groups.
+  # Add percentages to overall summary
+  total_overall_count <- sum(overall_type_concepts_summary$count, na.rm = TRUE)
+  overall_type_concepts_summary <- overall_type_concepts_summary %>%
+    dplyr::mutate(
+      percent = if (total_overall_count > 0) (count / total_overall_count) * 100 else 0
+    )
+
+  # Order detailed type concepts by canonical group, then count descending
   overall_type_concepts <- overall_type_concepts_detailed %>%
     dplyr::mutate(type_group = factor(type_group, levels = get_type_concept_group_order())) %>%
     dplyr::arrange(type_group, desc(count)) %>%
     dplyr::mutate(type_group = as.character(type_group))
+
+  # Calculate overall transition statistics
+  total_overall_transition_rows <- sum(overall_transitions$count, na.rm = TRUE)
+  overall_same_table_transitions <- overall_transitions %>%
+    dplyr::filter(source_table == target_table)
+  overall_cross_table_transitions <- overall_transitions %>%
+    dplyr::filter(source_table != target_table)
+  overall_same_table_count <- sum(overall_same_table_transitions$count, na.rm = TRUE)
+  overall_cross_table_count <- sum(overall_cross_table_transitions$count, na.rm = TRUE)
 
   data_list <- list(
     groups = group_data,
     type_colors = as.list(get_type_concept_colors()),
     type_group_order = get_type_concept_group_order(),
     overall_transitions = overall_transitions,
+    overall_transition_stats = list(
+      total_rows = total_overall_transition_rows,
+      same_table_count = overall_same_table_count,
+      cross_table_count = overall_cross_table_count
+    ),
     harmonization_statuses = overall_harmonization_statuses,
-    overall_type_concepts = overall_type_concepts
+    overall_type_concepts = overall_type_concepts,
+    overall_type_concepts_summary = overall_type_concepts_summary
   )
 
   jsonlite::toJSON(data_list, auto_unbox = TRUE, pretty = FALSE, na = "null")
@@ -489,12 +529,26 @@ prepare_table_data <- function(table_name, metrics, dqd_score) {
     # These tables don't participate in vocab harmonization
     harmonization <- 0
   } else {
-    # The harmonization formula:
-    # - same_table_result_rows: Total result rows that stayed in this table (includes 1:N duplication)
-    # - initial_rows: Starting point before harmonization
+    # Harmonization formula: same_table_result_rows - initial_rows + transitions_in
+    # - same_table_result_rows: Result rows remaining in this table (includes 1:N duplication)
+    # - initial_rows: Row count at harmonization entry point
     # - transitions_in: Rows received from other tables
     harmonization <- same_table_result_rows - initial_rows_calc + transitions_in
   }
+
+  # Calculate rows sent out to other tables (for vocab harmonization display)
+  rows_out <- transitions %>%
+    dplyr::filter(source_table == !!table_name, target_table != !!table_name) %>%
+    dplyr::summarise(total = sum(count, na.rm = TRUE)) %>%
+    dplyr::pull(total)
+  rows_out <- ifelse(length(rows_out) > 0, rows_out[1], 0)
+
+  # Pre-calculate percentages for display (avoid business logic in JavaScript)
+  default_date_percent <- if (final_rows > 0) (default_date_rows / final_rows) * 100 else 0
+  invalid_concept_percent <- if (final_rows > 0) (invalid_concept_rows / final_rows) * 100 else 0
+  missing_person_id_percent <- if (initial_rows_calc > 0) (missing_rows / initial_rows_calc) * 100 else 0
+  referential_integrity_percent <- if (final_rows > 0) (referential_integrity_violations / final_rows) * 100 else 0
+  invalid_rows_percent <- if (initial_rows_calc > 0) (invalid_rows / initial_rows_calc) * 100 else 0
 
   list(
     name = table_name,
@@ -507,9 +561,15 @@ prepare_table_data <- function(table_name, metrics, dqd_score) {
     referential_integrity_violations = referential_integrity_violations,
     harmonization = harmonization,
     transitions_in = transitions_in,
+    rows_out = rows_out,
     same_table_result_rows = same_table_result_rows,
     default_date_rows = default_date_rows,
     invalid_concept_rows = invalid_concept_rows,
+    default_date_percent = default_date_percent,
+    invalid_concept_percent = invalid_concept_percent,
+    missing_person_id_percent = missing_person_id_percent,
+    referential_integrity_percent = referential_integrity_percent,
+    invalid_rows_percent = invalid_rows_percent,
     missing_columns_added = length(missing_columns_list),
     missing_columns = missing_columns_list,
     dqd_score = dqd_score,

@@ -4,8 +4,7 @@
 
 #' Get complete CSS styles for the report
 #'
-#' Reads CSS from external file rather than embedding as a string.
-#' This allows proper syntax highlighting and easier maintenance.
+#' Reads CSS from external file for syntax highlighting and external editing.
 #'
 #' @return Character string containing the full CSS code
 get_full_css_styles <- function() {

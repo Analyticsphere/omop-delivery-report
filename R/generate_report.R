@@ -33,7 +33,7 @@ if (file.exists("R/gcs_utils.R")) {
 #' Load and validate delivery report data
 #'
 #' Reads delivery_report.csv from local filesystem or GCS.
-#' Returns NULL if file is missing (with warning) to allow graceful degradation.
+#' Returns NULL if file is missing (with warning).
 #' Supports both local paths and GCS URIs (gs://bucket/path).
 #'
 #' @param file_path Character. Path to delivery_report.csv (local or gs:// URI)
@@ -61,7 +61,7 @@ load_delivery_report <- function(file_path) {
 #' Load and validate DQD results data
 #'
 #' Reads Data Quality Dashboard results CSV from local filesystem or GCS.
-#' Returns NULL if file is missing (with warning) to allow graceful degradation.
+#' Returns NULL if file is missing (with warning).
 #' Supports both local paths and GCS URIs (gs://bucket/path).
 #'
 #' @param file_path Character. Path to dqd_results.csv (local or gs:// URI)

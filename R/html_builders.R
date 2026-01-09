@@ -56,7 +56,7 @@ build_report_header <- function(metrics, dqd_score, has_delivery_data = TRUE, ha
         <div class="report-header-content">
             <div>
                 <h1>%s</h1>
-                <div class="report-subtitle" style="font-size: 1.2em; font-weight: 500; color: #64748b; margin-top: 8px;">Delivery Date: %s</div>
+                <div class="report-subtitle">Delivery Date: %s</div>
             </div>
         </div>
     </div>',
@@ -164,10 +164,10 @@ build_delivery_overview_section <- function(metrics, dqd_scores, num_participant
             </div>
         </div>
 
-        <div style="margin-top: 32px;">
-            <div class="chart-title" style="margin-bottom: 4px;">Type Concept Breakdown</div>
-            <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; text-align: left;">Dataset-wide</div>
-            <div class="chart-container" style="margin-top: 16px;">
+        <div class="overview-section-title">
+            <div class="chart-title overview-section-subtitle">Type Concept Breakdown</div>
+            <div class="overview-disclaimer">Dataset-wide</div>
+            <div class="chart-container overview-metrics-spacer">
                 <div id="dataset-type-concepts" class="type-concept-chart">
                     <!-- Dynamically populated by JavaScript -->
                 </div>
@@ -215,7 +215,7 @@ build_delivery_report_section <- function(metrics, table_groups, group_dqd_score
                 <select id="table-group-selector" onchange="switchTableGroup(this.value)">
                     %s
                 </select>
-                <button onclick="exportTableToCSV()" class="export-button" style="margin-left: 20px;">
+                <button onclick="exportTableToCSV()" class="export-button export-button-spaced">
                     Export Counts to CSV
                 </button>
             </div>
@@ -429,10 +429,10 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
   }), collapse = "\n")
 
   dqd_note <- if (!is.na(group_dqd_score)) {
-    sprintf('<p style="margin: 0 0 4px 0;"><strong>Data Quality Score for this group:</strong> <span class="dqd-inline">%s%%</span></p>',
+    sprintf('<p class="dqd-score-text"><strong>Data Quality Score for this group:</strong> <span class="dqd-inline">%s%%</span></p>',
             group_dqd_score)
   } else {
-    '<p style="margin: 0 0 4px 0;"><strong>Data Quality Score:</strong> <span class="text-muted">Not available</span></p>'
+    '<p class="dqd-score-text"><strong>Data Quality Score:</strong> <span class="text-muted">Not available</span></p>'
   }
 
   # Dynamic Type Concept Breakdown subheader based on group name
@@ -444,11 +444,11 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
 
   sprintf('
     <div class="table-group-content" id="group-%s" style="%s">
-        <h3 style="margin: 0 0 8px 0; font-size: 1.3em; color: #0f172a;">%s</h3>
+        <h3 class="table-group-title">%s</h3>
 
         %s
 
-        <h4 style="margin-top: 12px; margin-bottom: 8px; font-size: 1.1em; color: #0f172a; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Table Delivery Summary</h4>
+        <h4 class="table-group-subtitle">Table Delivery Summary</h4>
         <div class="table-container">
             <table id="delivery-table-%s">
                 <thead>
@@ -469,9 +469,9 @@ build_table_group_content <- function(group_name, group_tables, metrics, group_d
         </div>
 
         <div class="subsection">
-            <h4 style="margin-bottom: 4px;">Type Concept Breakdown</h4>
-            <div style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; text-align: left;">%s</div>
-            <div id="group-type-concepts-%s" class="chart-container" style="margin-top: 8px;">
+            <h4 class="type-concepts-header">Type Concept Breakdown</h4>
+            <div class="type-concepts-disclaimer">%s</div>
+            <div id="group-type-concepts-%s" class="chart-container type-concepts-container">
                 <!-- Dynamically populated by JavaScript -->
             </div>
         </div>
