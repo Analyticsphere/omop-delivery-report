@@ -730,6 +730,65 @@ tr.row-warning:hover {
   padding: 8px 16px;
 }
 
+/* Responsive adjustments for DQD grid */
+@media (max-width: 1400px) {
+  .dqd-grid-table th {
+    padding: 8px 8px;
+    font-size: 0.75em;
+  }
+
+  .dqd-grid-table td {
+    padding: 8px 8px;
+    font-size: 0.9em;
+  }
+
+  .dqd-grid-table th:first-child,
+  .dqd-grid-table td:first-child {
+    width: 120px;
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .dqd-grid-table th {
+    padding: 6px 6px;
+    font-size: 0.7em;
+  }
+
+  .dqd-grid-table td {
+    padding: 6px 6px;
+    font-size: 0.85em;
+  }
+
+  .dqd-grid-table th:first-child,
+  .dqd-grid-table td:first-child {
+    width: 100px;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dqd-grid-table {
+    font-size: 0.85em;
+  }
+
+  .dqd-grid-table th {
+    padding: 4px 4px;
+    font-size: 0.65em;
+  }
+
+  .dqd-grid-table td {
+    padding: 4px 4px;
+    font-size: 0.8em;
+  }
+
+  .dqd-grid-table th:first-child,
+  .dqd-grid-table td:first-child {
+    width: 90px;
+    padding: 4px 8px;
+  }
+}
+
 .pass-cell {
   color: #047857;
   font-weight: 700;
